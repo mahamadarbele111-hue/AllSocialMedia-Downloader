@@ -4,7 +4,8 @@ import {
   Music, Instagram, Youtube, Ghost, Twitter, Download, Terminal, 
   Facebook, Linkedin, Share2, Cloud, Video, Mic2, Image, Radio, 
   Layers, Hash, Scissors, Clipboard, CheckCircle, Loader2, FileVideo, 
-  FileAudio, ShieldAlert, Clock, Trash2, Activity, ExternalLink
+  FileAudio, ShieldAlert, Clock, Trash2, Activity, ExternalLink, ImageIcon, 
+  AlertTriangle, X, Zap, Users, BarChart3
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -46,6 +47,10 @@ const loadingLogs = [
   "Finalizing extraction..."
 ];
 
+// Angka awal simulasi (biar terlihat sudah banyak yang pakai)
+const INITIAL_VISITORS = 14205;
+const INITIAL_LINKS = 45902;
+
 export default function App() {
   const [selected, setSelected] = useState(null);
   const [url, setUrl] = useState("");
@@ -53,11 +58,15 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [logIndex, setLogIndex] = useState(0);
   const [history, setHistory] = useState([]);
+  const [notification, setNotification] = useState(null);
+  
+  // STATE UNTUK STATISTIK LIVE
+  const [stats, setStats] = useState({ visitors: INITIAL_VISITORS, links: INITIAL_LINKS });
 
   const activeColor = selected ? platforms.find(p => p.id === selected).color : '#00f2ff';
   const activeName = selected ? platforms.find(p => p.id === selected).name : 'Universal';
 
-  // Efek Log berjalan saat loading
+  // Efek Loading Log
   useEffect(() => {
     let interval;
     if (isLoading) {
@@ -69,12 +78,28 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isLoading]);
 
+  // Efek Simulasi Realtime Visitor (Bertambah acak setiap 3-7 detik)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStats(prev => ({
+        ...prev,
+        visitors: prev.visitors + Math.floor(Math.random() * 3) // Tambah 0-2 visitor
+      }));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const showNotify = (message, type = 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       setUrl(text);
     } catch (err) {
-      alert("Clipboard access denied");
+      showNotify("Clipboard access denied", "error");
     }
   };
 
@@ -84,68 +109,43 @@ export default function App() {
 
   const clearHistory = () => setHistory([]);
 
-  // --- LOGIKA UNTUK MENCARI LINK DOWNLOAD ---
-// --- LOGIKA PINTAR MENCARI LINK ---
-// --- LOGIKA PINTAR MENCARI LINK (SUPPORT YOUTUBE & TIKTOK) ---
-// --- MASTER LOGIC: PENCARI LINK DOWNLOAD (UNIVERSAL) ---
+  // --- LOGIKA LINK DOWNLOAD ---
   const getDownloadLink = (type) => {
     if (!result) return null;
 
-    // ===============================================
-    // 1. CEK JIKA RESULT ADALAH ARRAY (Khusus Twitter)
-    // ===============================================
     if (Array.isArray(result)) {
-       // Twitter biasanya kirim array langsung
        if (type === 'video') {
-          // Cari resolusi tertinggi (misal: 1280x720) atau type mp4
           const vid = result.find(x => x.type === 'mp4' || x.quality.includes('720') || x.quality.includes('HD'));
           return vid ? vid.url : result[0]?.url;
        }
-       return null; // Twitter jarang kasih audio terpisah
+       return null; 
     }
 
-    // ===============================================
-    // 2. CEK LIST/ARRAY DALAM OBJEK (YouTube, TikTok, Pinterest, Douyin)
-    // ===============================================
-    // Kita gabungkan semua kemungkinan nama array menjadi satu variabel 'list'
-    const list = result.formats || result.downloads || result.videoLinks || result.medias;
-
+    const list = result.formats || result.downloads || result.videoLinks || result.medias || result.downloadLinks;
+    
     if (list && Array.isArray(list)) {
       if (type === 'video') {
-        // A. Cari yang JELAS video (MP4) dan BUKAN streaming (m3u8)
         let video = list.find(item => {
            const label = (item.text || item.label || item.type || item.quality || "").toLowerCase();
            const url = (item.url || "").toLowerCase();
-           
-           // Filter: Harus MP4/Video, Jangan M3U8/Manifest
            const isVideo = label.includes('video') || label.includes('mp4') || item.extension === 'mp4';
            const isNotStream = !url.includes('.m3u8') && !url.includes('manifest');
-           
            return isVideo && isNotStream;
         });
-
-        // B. Fallback: Cari yang ada label 'No Watermark' atau 'HD' (TikTok/Douyin)
         if (!video) {
           video = list.find(item => {
             const label = (item.text || item.label || "").toLowerCase();
             return label.includes('watermark') || label.includes('hd') || label.includes('origin');
           });
         }
-
-        // C. Fallback Terakhir: Ambil item pertama (Kecuali jika itu audio/profile)
         if (!video && list.length > 0) {
-           // Pastikan bukan profile picture (Douyin kadang kirim profile di array)
            const first = list[0];
-           if (!(first.label || "").toLowerCase().includes('profile')) {
-             video = first;
-           }
+           const label = (first.label || first.type || "").toLowerCase();
+           if (!label.includes('profile') && !label.includes('audio')) video = first;
         }
-
         return video ? video.url : null;
       } 
-      
       else if (type === 'audio') {
-        // Cari MP3/Audio/Music
         const audio = list.find(item => {
            const label = (item.text || item.label || item.type || item.extension || "").toLowerCase();
            return label.includes('mp3') || label.includes('audio') || label.includes('music');
@@ -154,90 +154,136 @@ export default function App() {
       }
     }
 
-    // ===============================================
-    // 3. CEK KUNCI SPESIFIK (Bluesky, Threads, Snapchat, Capcut, dll)
-    // ===============================================
-    // Ini menangani API yang hasilnya langsung URL string (bukan array)
-    
     if (type === 'video') {
-       // Cek urutan prioritas berdasarkan nama key di service kamu
-       if (result.videoUrl) return result.videoUrl;         // Bluesky, Kuaishou (kadang)
-       if (result.download) return result.download;         // Threads
-       if (result.downloadLink) return result.downloadLink; // Bluesky (backup)
-       if (result.video) return result.video;               // Snapchat/Umum
-       if (result.play) return result.play;                 // TikTok Simple
-       if (result.url) return result.url;                   // Reddit/Linkedin/Umum
-       if (result.file) return result.file;                 // Generic
-       
-       // Cek Nested Data (Capcut/Snapchat kadang dibungkus 'data')
+       if (result.videoUrl) return result.videoUrl;         
+       if (result.download) return result.download;         
+       if (result.downloadLink) return result.downloadLink; 
+       if (result.video) return result.video;               
+       if (result.play) return result.play;                 
+       if (result.url) return result.url;                   
+       if (result.file) return result.file;
        if (result.data) {
-          if (typeof result.data === 'string') return result.data; // Jika data langsung url
+          if (typeof result.data === 'string') return result.data; 
           if (result.data.video) return result.data.video;
           if (result.data.url) return result.data.url;
           if (result.data.play) return result.data.play;
        }
     }
-    
     else if (type === 'audio') {
        if (result.music) return result.music;
        if (result.audio) return result.audio;
        if (result.sound) return result.sound;
-       // Reddit kadang audioUrl
        if (result.audioUrl) return result.audioUrl;
     }
-
     return null;
   };
 
+  const getButtonConfig = () => {
+    switch (selected) {
+        case 'pinterest': return { label: 'DOWNLOAD IMAGE', icon: <ImageIcon size={14} />, noData: 'NO IMAGE' };
+        case 'spotify': return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />, noData: 'NO TRACK' };
+        case 'soundcloud': return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />, noData: 'NO TRACK' };
+        case 'instagram': return { label: 'DOWNLOAD POST', icon: <Instagram size={14} />, noData: 'NO POST' };
+        case 'snapchat': return { label: 'DOWNLOAD SNAP', icon: <Ghost size={14} />, noData: 'NO SNAP' };
+        case 'twitter': return { label: 'DOWNLOAD VIDEO', icon: <Twitter size={14} />, noData: 'NO VIDEO' };
+        case 'threads': return { label: 'DOWNLOAD POST', icon: <Hash size={14} />, noData: 'NO POST' };
+        case 'capcut': return { label: 'DOWNLOAD TEMPLATE', icon: <Scissors size={14} />, noData: 'NO VIDEO' };
+        case 'tumblr': return { label: 'DOWNLOAD POST', icon: <Layers size={14} />, noData: 'NO POST' };
+        case 'bluesky': return { label: 'DOWNLOAD POST', icon: <Cloud size={14} />, noData: 'NO POST' };
+        case 'youtube': return { label: 'DOWNLOAD VIDEO', icon: <Youtube size={14} />, noData: 'NO VIDEO' };
+        case 'tiktok': 
+        case 'douyin': return { label: 'DOWNLOAD VIDEO', icon: <FileVideo size={14} />, noData: 'NO VIDEO' };
+        default: return { label: 'DOWNLOAD VIDEO', icon: <FileVideo size={14} />, noData: 'NO VIDEO' };
+    }
+  };
+
+  const btnConfig = getButtonConfig();
+  const isAudioPlatform = ['spotify', 'soundcloud'].includes(selected);
+  const primaryLink = isAudioPlatform ? getDownloadLink('audio') : getDownloadLink('video');
+
   const handleExtract = async () => {
-    if (!url) return alert("Please insert URL first!");
-    if (!selected) return alert("Please select a platform first!");
+    if (!url) return showNotify("Please insert URL first!", "error");
+    if (!selected) return showNotify("Please select a platform first!", "error");
 
     setIsLoading(true);
     setResult(null);
-
     const endpoint = `http://localhost:3000/api/${selected}`;
 
     try {
       const response = await axios.post(endpoint, { url: url });
       setResult(response.data);
       addToHistory(response.data);
+      
+      // Update Statistik Links Processed (Tambah 1 saat sukses)
+      setStats(prev => ({ ...prev, links: prev.links + 1 }));
+
     } catch (error) {
       console.error(error);
       const msg = error.response?.data?.details || error.response?.data?.error || "Gagal menghubungi Server.";
-      alert(`ERROR (${selected.toUpperCase()}): \n${msg}`);
+      showNotify(`ERROR [${selected.toUpperCase()}]: ${msg}`, "error");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen p-6 flex flex-col items-center justify-center font-sans overflow-x-hidden">
+    <div className="min-h-screen p-6 flex flex-col items-center justify-center font-sans overflow-x-hidden relative bg-[#050505]">
       
-      {/* HEADER */}
-      <header className="mb-6 text-center">
-        <div className="flex justify-center items-center gap-2 mb-2">
-          <Terminal size={14} className="text-cyber" />
-          <span className="text-[10px] text-cyber/80 font-bold uppercase tracking-[0.3em] animate-pulse">
-            System Online // V.3.5 (Download Active)
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ y: -100, opacity: 0, scale: 0.9 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -100, opacity: 0, scale: 0.9 }}
+            className="fixed top-6 left-0 right-0 mx-auto w-[90%] max-w-md z-50 pointer-events-none"
+          >
+            <div className="bg-black/90 backdrop-blur-xl border border-l-4 rounded-r-lg shadow-[0_0_20px_rgba(0,0,0,0.5)] p-4 flex items-start gap-4 pointer-events-auto"
+                 style={{ borderColor: notification.type === 'error' ? '#ef4444' : '#00f2ff' }}>
+              <div className={`p-2 rounded-full bg-opacity-20 ${notification.type === 'error' ? 'bg-red-500 text-red-500' : 'bg-cyan-500 text-cyan-500'}`}>
+                <AlertTriangle size={20} />
+              </div>
+              <div className="flex-1">
+                <h4 className={`text-xs font-bold tracking-widest uppercase mb-1 ${notification.type === 'error' ? 'text-red-500' : 'text-cyan-400'}`}>
+                  {notification.type === 'error' ? 'SYSTEM ALERT' : 'NOTIFICATION'}
+                </h4>
+                <p className="text-gray-300 text-xs font-mono leading-relaxed">{notification.message}</p>
+              </div>
+              <button onClick={() => setNotification(null)} className="text-gray-500 hover:text-white transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- HEADER --- */}
+      <header className="mb-10 text-center flex flex-col items-center w-full max-w-2xl mx-auto">
+        <div className="flex justify-center items-center gap-2 mb-6 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+            System Operational
           </span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-black tracking-tighter italic mb-4">
-          ZERONAUT_<span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">DOWNLOADER</span>
+        
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight text-white mb-2 leading-tight">
+          ZERONAUT<span className="text-gray-600">.DOWNLOADER</span>
         </h1>
-        <div className="inline-block px-4 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
-          <p className="text-[10px] md:text-xs text-gray-400 tracking-widest font-mono">
-             [ PLEASE SELECT PLATFORM TARGET BELOW ]
-          </p>
+        
+        <div className="flex items-center gap-3 mb-8">
+           <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-cyan-500/50"></div>
+           <h2 className="text-[10px] sm:text-xs font-medium tracking-[0.5em] text-cyan-400/80 uppercase whitespace-nowrap">
+              NO WATERMARK ENGINE
+           </h2>
+           <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-cyan-500/50"></div>
         </div>
       </header>
 
-      {/* GRID PLATFORM */}
+      {/* --- PLATFORM GRID --- */}
       <motion.div 
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="w-full max-w-5xl grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mb-8"
+        className="w-full max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-10"
       >
         {platforms.map((p) => (
           <motion.button
@@ -246,36 +292,29 @@ export default function App() {
             onClick={() => { setSelected(p.id); setResult(null); }}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            className={`relative flex flex-row items-center justify-start gap-3 px-4 py-3 rounded-lg border border-white/5 bg-white/5 backdrop-blur-sm transition-all duration-300 group overflow-hidden ${
-              selected === p.id ? 'ring-1 ring-offset-1 ring-offset-black' : 'hover:bg-white/10'
+            className={`relative flex flex-row items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-4 rounded-xl border border-white/5 bg-[#0a0a0c] hover:bg-[#121214] transition-all duration-300 group overflow-hidden ${
+              selected === p.id ? 'ring-1 ring-offset-1 ring-offset-black' : ''
             }`}
             style={{ borderColor: selected === p.id ? p.color : 'rgba(255,255,255,0.05)' }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500" style={{ background: `linear-gradient(to right, ${p.color}, transparent)` }} />
             <div className="transition-transform duration-300 group-hover:scale-110 shrink-0" style={{ color: p.color }}>
-              {React.cloneElement(p.icon, { size: 20 })}
+              {React.cloneElement(p.icon, { size: 18 })}
             </div>
-            <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase group-hover:text-white transition-colors truncate">
+            <span className="text-[10px] sm:text-xs font-bold tracking-wider text-gray-400 uppercase group-hover:text-white transition-colors truncate">
               {p.name}
             </span>
             {selected === p.id && (
-              <motion.div 
-                layoutId="active-dot"
-                className="absolute right-2 w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: p.color, boxShadow: `0 0 8px ${p.color}` }}
-              />
+              <motion.div layoutId="active-dot" className="absolute right-3 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color, boxShadow: `0 0 10px ${p.color}` }} />
             )}
           </motion.button>
         ))}
       </motion.div>
 
-      {/* INPUT AREA */}
+      {/* --- INPUT AREA --- */}
       <motion.div layout className="w-full max-w-3xl mb-8 relative z-20">
-        <div 
-          className="bg-[#0a0a0c]/80 border-2 p-1 rounded-xl backdrop-blur-xl transition-colors duration-500 shadow-2xl"
-          style={{ borderColor: activeColor, boxShadow: selected ? `0 0 30px -10px ${activeColor}20` : 'none' }}
-        >
-          <div className="bg-white/5 rounded-lg p-5 flex flex-col gap-3">
+        <div className="bg-[#0a0a0c] border border-white/10 p-1 rounded-2xl shadow-2xl transition-colors duration-500" style={{ borderColor: activeColor }}>
+          <div className="bg-[#121214] rounded-xl p-4 sm:p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
               <span className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: activeColor }} />
@@ -283,36 +322,34 @@ export default function App() {
               </span>
               {isLoading ? <span className="text-cyber animate-pulse">{">"} {loadingLogs[logIndex]}</span> : <span>READY</span>}
             </div>
-
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1 group">
                 <input 
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder={`Paste ${activeName} Link...`}
-                  className="w-full h-10 bg-black/50 border border-white/10 rounded-md px-4 pr-10 text-white outline-none focus:border-white/30 transition-all placeholder:text-gray-600 font-mono text-xs"
+                  placeholder={`Paste ${activeName} Link here...`}
+                  className="w-full h-12 bg-black/40 border border-white/5 rounded-lg px-4 pr-10 text-white outline-none focus:border-white/20 transition-all placeholder:text-gray-600 font-mono text-xs"
                 />
-                <button onClick={handlePaste} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
-                  <Clipboard size={14} />
+                <button onClick={handlePaste} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+                  <Clipboard size={16} />
                 </button>
               </div>
-
               <button 
                 onClick={handleExtract}
                 disabled={isLoading}
-                className="h-10 px-6 rounded-md font-bold text-black text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 hover:brightness-110 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-12 px-8 rounded-lg font-bold text-black text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 hover:brightness-110 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,0,0,0.3)]"
                 style={{ backgroundColor: activeColor }}
               >
-                {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} className="animate-bounce" />}
-                <span>{isLoading ? 'PROCESSING...' : 'EXTRACT DATA'}</span>
+                {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} className="fill-black" />}
+                <span>{isLoading ? 'PROCESSING...' : 'EXTRACT'}</span>
               </button>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* RESULT CARD (VERSI BARU DENGAN LINK DOWNLOAD) */}
+      {/* --- RESULT CARD --- */}
       <AnimatePresence mode="wait">
         {result && (
           <motion.div
@@ -321,59 +358,56 @@ export default function App() {
             exit={{ opacity: 0, y: -20 }}
             className="w-full max-w-3xl mb-8"
           >
-            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden backdrop-blur-md">
-              <div className="bg-black/30 px-6 py-3 border-b border-white/5 flex justify-between items-center">
-                <div className="flex items-center gap-2 text-cyber text-xs font-bold tracking-wider">
+            <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl overflow-hidden">
+              <div className="bg-white/5 px-6 py-3 border-b border-white/5 flex justify-between items-center">
+                <div className="flex items-center gap-2 text-green-400 text-xs font-bold tracking-wider">
                   <CheckCircle size={14} />
-                  SUCCESS
+                  SUCCESSFULLY EXTRACTED
                 </div>
                 <div className="text-[10px] text-gray-500 font-mono">{result.date || 'Just now'}</div>
               </div>
               <div className="p-6 flex flex-col md:flex-row gap-6">
-                <div className="w-full md:w-1/3 aspect-video bg-black rounded-lg border border-white/10 relative overflow-hidden group">
+                <div className="w-full md:w-1/3 aspect-video bg-black rounded-xl border border-white/5 relative overflow-hidden group shadow-lg">
                   <img src={result.thumbnail} alt="Preview" className="w-full h-full object-cover opacity-80" />
-                  <div className="absolute bottom-2 left-2 text-[10px] text-white bg-black/50 px-2 rounded">{result.size || 'Varies'}</div>
+                  <div className="absolute bottom-2 left-2 text-[10px] text-white bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-white/10">{result.size || 'HD Quality'}</div>
                 </div>
                 <div className="flex-1 flex flex-col justify-between gap-4">
                   <div>
-                    <h3 className="text-white font-bold text-base mb-1 line-clamp-2">{result.title}</h3>
-                    <p className="text-gray-400 text-xs">By {result.author}</p>
+                    <h3 className="text-white font-bold text-lg mb-1 line-clamp-2 leading-snug">{result.title}</h3>
+                    <p className="text-gray-400 text-xs flex items-center gap-1"><Activity size={10}/> By {result.author}</p>
                   </div>
-                  
-                  {/* TOMBOL DOWNLOAD AKTIF */}
                   <div className="grid grid-cols-2 gap-3">
-                    {getDownloadLink('video') ? (
+                    {primaryLink ? (
                       <a 
-                        href={getDownloadLink('video')} 
+                        href={primaryLink} 
                         target="_blank" 
                         rel="noreferrer"
-                        className="flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-200 py-2 rounded-lg text-xs font-bold transition-all"
+                        className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all border ${isAudioPlatform ? 'bg-green-500/10 hover:bg-green-500/20 border-green-500/30 text-green-400 col-span-2' : 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 text-blue-400'}`}
                       >
-                        <FileVideo size={14} /> DOWNLOAD MP4
+                         {btnConfig.icon} {btnConfig.label}
                       </a>
                     ) : (
-                      <button disabled className="flex items-center justify-center gap-2 bg-white/5 text-gray-500 py-2 rounded-lg text-xs font-bold cursor-not-allowed border border-white/5">
-                        <FileVideo size={14} /> NO VIDEO
+                      <button disabled className={`flex items-center justify-center gap-2 bg-white/5 text-gray-500 py-3 rounded-xl text-xs font-bold cursor-not-allowed border border-white/5 ${isAudioPlatform ? 'col-span-2' : ''}`}>
+                        {btnConfig.icon} {btnConfig.noData}
                       </button>
                     )}
-
-                    {getDownloadLink('audio') ? (
-                      <a 
-                        href={getDownloadLink('audio')} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="flex items-center justify-center gap-2 bg-green-600/20 hover:bg-green-600/40 border border-green-500/30 text-green-200 py-2 rounded-lg text-xs font-bold transition-all"
-                      >
-                         <FileAudio size={14} /> DOWNLOAD MP3
-                      </a>
-                    ) : (
-                      // Kalau tidak ada audio terpisah (biasanya video sudah ada suaranya), kita disable
-                      <button disabled className="flex items-center justify-center gap-2 bg-white/5 text-gray-500 py-2 rounded-lg text-xs font-bold cursor-not-allowed border border-white/5">
-                        <FileAudio size={14} /> NO AUDIO
-                      </button>
+                    {!isAudioPlatform && (
+                      getDownloadLink('audio') ? (
+                        <a 
+                          href={getDownloadLink('audio')} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 border-green-500/30 text-green-400 py-3 rounded-xl text-xs font-bold transition-all"
+                        >
+                           <FileAudio size={14} /> DOWNLOAD MP3
+                        </a>
+                      ) : (
+                        <button disabled className="flex items-center justify-center gap-2 bg-white/5 text-gray-500 py-3 rounded-xl text-xs font-bold cursor-not-allowed border border-white/5">
+                          <FileAudio size={14} /> NO AUDIO
+                        </button>
+                      )
                     )}
                   </div>
-
                 </div>
               </div>
             </div>
@@ -381,7 +415,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* HISTORY PANEL */}
+      {/* --- HISTORY --- */}
       {history.length > 0 && (
         <motion.div 
           initial={{ opacity: 0 }} 
@@ -389,11 +423,11 @@ export default function App() {
           className="w-full max-w-3xl mt-4"
         >
           <div className="flex items-center justify-between mb-3 px-2">
-            <div className="flex items-center gap-2 text-gray-500 text-xs font-bold">
-              <Clock size={12} /> RECENT ACTIVITY
+            <div className="flex items-center gap-2 text-gray-500 text-[10px] font-bold tracking-widest uppercase">
+              <Clock size={12} /> Recent History
             </div>
-            <button onClick={clearHistory} className="text-[10px] text-red-500 hover:text-red-400 flex items-center gap-1">
-              <Trash2 size={10} /> CLEAR
+            <button onClick={clearHistory} className="text-[10px] text-red-500/70 hover:text-red-500 flex items-center gap-1 transition-colors">
+              <Trash2 size={10} /> CLEAR ALL
             </button>
           </div>
           <div className="space-y-2">
@@ -402,19 +436,19 @@ export default function App() {
                 key={idx}
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                className="bg-white/5 border border-white/5 rounded-lg p-3 flex items-center justify-between hover:bg-white/10 transition-colors"
+                className="bg-[#0a0a0c] border border-white/5 rounded-lg p-3 flex items-center justify-between hover:border-white/10 transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-black rounded-md text-gray-400">
+                  <div className="p-2 bg-white/5 rounded-md text-gray-400 group-hover:text-white transition-colors">
                     <Activity size={14} />
                   </div>
                   <div className="overflow-hidden">
-                    <h4 className="text-white text-xs font-bold truncate max-w-[200px]">{item.title}</h4>
-                    <p className="text-[10px] text-gray-500">{item.author}</p>
+                    <h4 className="text-gray-300 group-hover:text-white text-xs font-bold truncate max-w-[200px] transition-colors">{item.title}</h4>
+                    <p className="text-[10px] text-gray-600">{item.author}</p>
                   </div>
                 </div>
-                <button className="text-cyber text-[10px] border border-cyber/30 px-2 py-1 rounded hover:bg-cyber/10">
-                  <ExternalLink size={10} /> OPEN
+                <button className="text-gray-500 hover:text-cyan-400 text-[10px] border border-transparent hover:border-cyan-400/30 px-3 py-1.5 rounded transition-all bg-white/5">
+                  OPEN
                 </button>
               </motion.div>
             ))}
@@ -422,14 +456,48 @@ export default function App() {
         </motion.div>
       )}
 
-      <footer className="mt-12 text-center opacity-40 hover:opacity-100 transition-opacity pb-6">
-        <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500 mb-2">
-          <ShieldAlert size={12} />
-          <span>EDUCATIONAL PURPOSE ONLY</span>
+      {/* --- REALTIME STATS (FITUR BARU) --- */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-3xl mt-12 grid grid-cols-2 gap-4"
+      >
+        <div className="bg-[#0a0a0c] border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-cyan-500/20 transition-colors">
+           <div>
+              <div className="flex items-center gap-2 mb-1">
+                 <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
+                 <p className="text-[10px] font-bold tracking-widest text-cyan-500/70 uppercase">Live Users</p>
+              </div>
+              {/* Angka ini akan bertambah otomatis */}
+              <h3 className="text-2xl font-mono text-white font-bold">{stats.visitors.toLocaleString()}</h3>
+           </div>
+           <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 group-hover:scale-110 transition-transform">
+              <Users size={20} />
+           </div>
         </div>
-        <p className="text-[9px] text-gray-600 font-mono tracking-widest">
-          ZERONAUT_SYSTEM // V.3.5
+
+        <div className="bg-[#0a0a0c] border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-green-500/20 transition-colors">
+           <div>
+              <div className="flex items-center gap-2 mb-1">
+                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                 <p className="text-[10px] font-bold tracking-widest text-green-500/70 uppercase">Processed</p>
+              </div>
+              {/* Angka ini bertambah saat kamu extract data */}
+              <h3 className="text-2xl font-mono text-white font-bold">{stats.links.toLocaleString()}</h3>
+           </div>
+           <div className="p-3 bg-green-500/10 rounded-xl text-green-400 group-hover:scale-110 transition-transform">
+              <BarChart3 size={20} />
+           </div>
+        </div>
+      </motion.div>
+
+      <footer className="mt-16 text-center opacity-30 hover:opacity-100 transition-opacity pb-8">
+        <p className="text-[10px] text-gray-500 font-mono tracking-[0.2em] mb-2">
+          © 2026 ZeroNaut Downloader. All rights reserved.
         </p>
+        <div className="flex items-center justify-center gap-2 text-[9px] text-gray-600">
+          <span>Powered by Zeronaut</span>
+        </div>
       </footer>
     </div>
   );
