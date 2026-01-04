@@ -495,7 +495,7 @@ export default function App() {
         className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold text-xs px-5 py-3 rounded-full shadow-[0_0_20px_rgba(255,165,0,0.4)] hover:shadow-[0_0_30px_rgba(255,165,0,0.6)] transition-shadow cursor-pointer w-max mx-auto mt-10 md:fixed md:bottom-6 md:right-6 md:z-50 md:m-0"
       >
         <Heart size={16} className="fill-black animate-pulse" />
-        DONATE ME
+        DONATE
       </motion.a>
 
       <footer className="mt-16 text-center opacity-30 hover:opacity-100 transition-opacity pb-8">
