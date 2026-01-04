@@ -5,7 +5,7 @@ import {
   Facebook, Linkedin, Share2, Cloud, Video, Mic2, Image, Radio, 
   Layers, Hash, Scissors, Clipboard, CheckCircle, Loader2, FileVideo, 
   FileAudio, ShieldAlert, Clock, Trash2, Activity, ExternalLink, ImageIcon, 
-  AlertTriangle, X, Zap, Users, BarChart3
+  AlertTriangle, X, Zap, Users, BarChart3, Heart
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -47,7 +47,6 @@ const loadingLogs = [
   "Finalizing extraction..."
 ];
 
-// Angka awal simulasi (biar terlihat sudah banyak yang pakai)
 const INITIAL_VISITORS = 14205;
 const INITIAL_LINKS = 45902;
 
@@ -59,14 +58,11 @@ export default function App() {
   const [logIndex, setLogIndex] = useState(0);
   const [history, setHistory] = useState([]);
   const [notification, setNotification] = useState(null);
-  
-  // STATE UNTUK STATISTIK LIVE
   const [stats, setStats] = useState({ visitors: INITIAL_VISITORS, links: INITIAL_LINKS });
 
   const activeColor = selected ? platforms.find(p => p.id === selected).color : '#00f2ff';
   const activeName = selected ? platforms.find(p => p.id === selected).name : 'Universal';
 
-  // Efek Loading Log
   useEffect(() => {
     let interval;
     if (isLoading) {
@@ -78,12 +74,11 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // Efek Simulasi Realtime Visitor (Bertambah acak setiap 3-7 detik)
   useEffect(() => {
     const interval = setInterval(() => {
       setStats(prev => ({
         ...prev,
-        visitors: prev.visitors + Math.floor(Math.random() * 3) // Tambah 0-2 visitor
+        visitors: prev.visitors + Math.floor(Math.random() * 3)
       }));
     }, 4000);
     return () => clearInterval(interval);
@@ -213,10 +208,7 @@ export default function App() {
       const response = await axios.post(endpoint, { url: url });
       setResult(response.data);
       addToHistory(response.data);
-      
-      // Update Statistik Links Processed (Tambah 1 saat sukses)
       setStats(prev => ({ ...prev, links: prev.links + 1 }));
-
     } catch (error) {
       console.error(error);
       const msg = error.response?.data?.details || error.response?.data?.error || "Gagal menghubungi Server.";
@@ -229,6 +221,7 @@ export default function App() {
   return (
     <div className="min-h-screen p-6 flex flex-col items-center justify-center font-sans overflow-x-hidden relative bg-[#050505]">
       
+      {/* --- NOTIFIKASI SYSTEM --- */}
       <AnimatePresence>
         {notification && (
           <motion.div
@@ -456,7 +449,7 @@ export default function App() {
         </motion.div>
       )}
 
-      {/* --- REALTIME STATS (FITUR BARU) --- */}
+      {/* --- REALTIME STATS --- */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -468,7 +461,6 @@ export default function App() {
                  <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
                  <p className="text-[10px] font-bold tracking-widest text-cyan-500/70 uppercase">Live Users</p>
               </div>
-              {/* Angka ini akan bertambah otomatis */}
               <h3 className="text-2xl font-mono text-white font-bold">{stats.visitors.toLocaleString()}</h3>
            </div>
            <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 group-hover:scale-110 transition-transform">
@@ -482,7 +474,6 @@ export default function App() {
                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
                  <p className="text-[10px] font-bold tracking-widest text-green-500/70 uppercase">Processed</p>
               </div>
-              {/* Angka ini bertambah saat kamu extract data */}
               <h3 className="text-2xl font-mono text-white font-bold">{stats.links.toLocaleString()}</h3>
            </div>
            <div className="p-3 bg-green-500/10 rounded-xl text-green-400 group-hover:scale-110 transition-transform">
@@ -491,12 +482,28 @@ export default function App() {
         </div>
       </motion.div>
 
+      {/* --- RESPONSIVE DONATE BUTTON (UPDATED V.5.6) --- */}
+      <motion.a
+        href="https://sociabuzz.com/zeronaut/tribe" 
+        target="_blank"
+        rel="noopener noreferrer"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        // CLASS RESPONSIVE LOGIC:
+        // - HP (Default): mx-auto (tengah), mt-10 (jarak dari atas), w-max (lebar secukupnya).
+        // - Desktop (md): fixed (melayang), bottom-6 right-6 (pojok), m-0 (reset margin).
+        className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold text-xs px-5 py-3 rounded-full shadow-[0_0_20px_rgba(255,165,0,0.4)] hover:shadow-[0_0_30px_rgba(255,165,0,0.6)] transition-shadow cursor-pointer w-max mx-auto mt-10 md:fixed md:bottom-6 md:right-6 md:z-50 md:m-0"
+      >
+        <Heart size={16} className="fill-black animate-pulse" />
+        DONATE ME
+      </motion.a>
+
       <footer className="mt-16 text-center opacity-30 hover:opacity-100 transition-opacity pb-8">
         <p className="text-[10px] text-gray-500 font-mono tracking-[0.2em] mb-2">
-          © 2026 ZeroNaut Downloader. All rights reserved.
+         © 2026 ZeroNaut Downloader. All rights reserved.
         </p>
         <div className="flex items-center justify-center gap-2 text-[9px] text-gray-600">
-          <span>Powered by Zeronaut</span>
+          <span>POWERED BY ZERONAUT</span>
         </div>
       </footer>
     </div>
