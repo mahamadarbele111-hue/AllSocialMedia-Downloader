@@ -70,10 +70,14 @@ app.get('/', (req, res) => {
     res.send('ZERONAUT ENGINE READY 🚀');
 });
 
-if (require.main === module) {
+// --- PENTING: KONFIGURASI PORT ---
+// Kode ini memastikan app.listen HANYA jalan di Localhost.
+// Di Vercel, app.listen tidak boleh dijalankan secara langsung.
+if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
         console.log(`>> SERVER NYALA DI: http://localhost:${PORT}`);
     });
 }
 
+// WAJIB: Export app agar bisa dibaca oleh api/index.js
 module.exports = app;
