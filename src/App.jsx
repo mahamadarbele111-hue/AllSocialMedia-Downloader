@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Music, Instagram, Youtube, Ghost, Twitter, Download, Terminal, 
-  Facebook, Linkedin, Share2, Cloud, Video, Mic2, Image, Radio, 
+  Music, Instagram, Youtube, Ghost, Twitter, Terminal, 
+  Facebook, Linkedin, Cloud, Video, Mic2, Image, Radio, 
   Layers, Hash, Scissors, Clipboard, CheckCircle, Loader2, FileVideo, 
-  FileAudio, ShieldAlert, Clock, Trash2, Activity, ExternalLink, ImageIcon, 
+  FileAudio, Clock, Trash2, Activity, ImageIcon, 
   AlertTriangle, X, Zap, Users, BarChart3, Heart
 } from 'lucide-react';
 import axios from 'axios';
@@ -104,90 +104,84 @@ export default function App() {
 
   const clearHistory = () => setHistory([]);
 
-  // --- LOGIKA LINK DOWNLOAD ---
+  // --- LOGIKA UTAMA PENCARI LINK (ANTI-CRASH FIX) ---
   const getDownloadLink = (type) => {
     if (!result) return null;
 
+    // A. Handling Array (Twitter/IG hasil baru)
     if (Array.isArray(result)) {
        if (type === 'video') {
-          const vid = result.find(x => x.type === 'mp4' || x.quality.includes('720') || x.quality.includes('HD'));
-          return vid ? vid.url : result[0]?.url;
+          const vid = result.find(x => x.type === 'video' || x.type === 'mp4');
+          return vid ? vid.url : (result[0]?.url || null);
        }
        return null; 
     }
 
+    // B. Handling Object dengan List Medias
     const list = result.formats || result.downloads || result.videoLinks || result.medias || result.downloadLinks;
     
     if (list && Array.isArray(list)) {
       if (type === 'video') {
         let video = list.find(item => {
-           const label = (item.text || item.label || item.type || item.quality || "").toLowerCase();
-           const url = (item.url || "").toLowerCase();
-           const isVideo = label.includes('video') || label.includes('mp4') || item.extension === 'mp4';
-           const isNotStream = !url.includes('.m3u8') && !url.includes('manifest');
+           // FIX CRASH: Pakai String() agar tidak error jika data bukan text
+           const label = String(item.text || item.label || item.quality || "").toLowerCase();
+           const url = String(item.url || "").toLowerCase();
+           
+           const isVideo = label.includes('video') || label.includes('mp4') || item.extension === 'mp4' || item.type === 'video';
+           const isNotStream = !url.includes('.m3u8');
+           
            return isVideo && isNotStream;
         });
+        
+        // Fallback: Jika tidak ada label video, tapi linknya jelas .mp4
         if (!video) {
-          video = list.find(item => {
-            const label = (item.text || item.label || "").toLowerCase();
-            return label.includes('watermark') || label.includes('hd') || label.includes('origin');
-          });
+            video = list.find(item => item.url && String(item.url).includes('.mp4'));
         }
+
+        // Fallback Terakhir: Item pertama (tapi bukan audio)
         if (!video && list.length > 0) {
            const first = list[0];
-           const label = (first.label || first.type || "").toLowerCase();
-           if (!label.includes('profile') && !label.includes('audio')) video = first;
+           const label = String(first.label || first.type || "").toLowerCase();
+           if (!label.includes('profile') && !label.includes('audio')) {
+             video = first;
+           }
         }
         return video ? video.url : null;
       } 
       else if (type === 'audio') {
         const audio = list.find(item => {
-           const label = (item.text || item.label || item.type || item.extension || "").toLowerCase();
+           const label = String(item.text || item.label || item.type || item.extension || "").toLowerCase();
            return label.includes('mp3') || label.includes('audio') || label.includes('music');
         });
         return audio ? audio.url : null;
       }
     }
-
+    
+    // C. Handling Object Direct Keys (Fix String coercion)
     if (type === 'video') {
        if (result.videoUrl) return result.videoUrl;         
        if (result.download) return result.download;         
-       if (result.downloadLink) return result.downloadLink; 
        if (result.video) return result.video;               
-       if (result.play) return result.play;                 
        if (result.url) return result.url;                   
-       if (result.file) return result.file;
-       if (result.data) {
-          if (typeof result.data === 'string') return result.data; 
-          if (result.data.video) return result.data.video;
-          if (result.data.url) return result.data.url;
-          if (result.data.play) return result.data.play;
-       }
-    }
-    else if (type === 'audio') {
-       if (result.music) return result.music;
-       if (result.audio) return result.audio;
-       if (result.sound) return result.sound;
-       if (result.audioUrl) return result.audioUrl;
     }
     return null;
   };
 
   const getButtonConfig = () => {
+    const videoLink = getDownloadLink('video');
+    // FIX CRASH: Cek String(videoLink)
+    const isImage = videoLink && (String(videoLink).includes('.jpg') || String(videoLink).includes('.webp') || String(videoLink).includes('.png'));
+
     switch (selected) {
         case 'pinterest': return { label: 'DOWNLOAD IMAGE', icon: <ImageIcon size={14} />, noData: 'NO IMAGE' };
         case 'spotify': return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />, noData: 'NO TRACK' };
         case 'soundcloud': return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />, noData: 'NO TRACK' };
-        case 'instagram': return { label: 'DOWNLOAD POST', icon: <Instagram size={14} />, noData: 'NO POST' };
-        case 'snapchat': return { label: 'DOWNLOAD SNAP', icon: <Ghost size={14} />, noData: 'NO SNAP' };
-        case 'twitter': return { label: 'DOWNLOAD VIDEO', icon: <Twitter size={14} />, noData: 'NO VIDEO' };
-        case 'threads': return { label: 'DOWNLOAD POST', icon: <Hash size={14} />, noData: 'NO POST' };
-        case 'capcut': return { label: 'DOWNLOAD TEMPLATE', icon: <Scissors size={14} />, noData: 'NO VIDEO' };
-        case 'tumblr': return { label: 'DOWNLOAD POST', icon: <Layers size={14} />, noData: 'NO POST' };
-        case 'bluesky': return { label: 'DOWNLOAD POST', icon: <Cloud size={14} />, noData: 'NO POST' };
-        case 'youtube': return { label: 'DOWNLOAD VIDEO', icon: <Youtube size={14} />, noData: 'NO VIDEO' };
-        case 'tiktok': 
-        case 'douyin': return { label: 'DOWNLOAD VIDEO', icon: <FileVideo size={14} />, noData: 'NO VIDEO' };
+        case 'instagram': 
+            return { 
+                label: isImage ? 'DOWNLOAD IMAGE' : 'DOWNLOAD REEL', 
+                icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, 
+                noData: 'NO POST' 
+            };
         default: return { label: 'DOWNLOAD VIDEO', icon: <FileVideo size={14} />, noData: 'NO VIDEO' };
     }
   };
@@ -195,6 +189,7 @@ export default function App() {
   const btnConfig = getButtonConfig();
   const isAudioPlatform = ['spotify', 'soundcloud'].includes(selected);
   const primaryLink = isAudioPlatform ? getDownloadLink('audio') : getDownloadLink('video');
+  const showAudioButton = !isAudioPlatform && !['instagram', 'pinterest'].includes(selected);
 
   const handleExtract = async () => {
     if (!url) return showNotify("Please insert URL first!", "error");
@@ -221,7 +216,7 @@ export default function App() {
   return (
     <div className="min-h-screen p-6 flex flex-col items-center justify-center font-sans overflow-x-hidden relative bg-[#050505]">
       
-      {/* --- NOTIFIKASI SYSTEM --- */}
+      {/* NOTIFIKASI */}
       <AnimatePresence>
         {notification && (
           <motion.div
@@ -249,7 +244,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <header className="mb-10 text-center flex flex-col items-center w-full max-w-2xl mx-auto">
         <div className="flex justify-center items-center gap-2 mb-6 px-3 py-1 rounded-full bg-white/5 border border-white/5">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -258,9 +253,20 @@ export default function App() {
           </span>
         </div>
         
-        <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight text-white mb-2 leading-tight">
-          ZERONAUT<span className="text-gray-600">.DOWNLOADER</span>
-        </h1>
+        <motion.h1 
+          className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight mb-2 leading-tight bg-clip-text text-transparent bg-[length:200%_auto]"
+          animate={{
+            backgroundImage: [
+              "linear-gradient(to right, #ffffff, #a5f3fc, #ffffff)",
+              "linear-gradient(to right, #a5f3fc, #ffffff, #a5f3fc)",
+              "linear-gradient(to right, #ffffff, #a5f3fc, #ffffff)"
+            ]
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+          style={{ backgroundImage: "linear-gradient(to right, #ffffff, #a5f3fc, #ffffff)" }}
+        >
+          ZERONAUT.DOWNLOADER
+        </motion.h1>
         
         <div className="flex items-center gap-3 mb-8">
            <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-cyan-500/50"></div>
@@ -271,7 +277,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* --- PLATFORM GRID --- */}
+      {/* PLATFORM GRID */}
       <motion.div 
         variants={containerVariants}
         initial="hidden"
@@ -304,7 +310,7 @@ export default function App() {
         ))}
       </motion.div>
 
-      {/* --- INPUT AREA --- */}
+      {/* INPUT AREA */}
       <motion.div layout className="w-full max-w-3xl mb-8 relative z-20">
         <div className="bg-[#0a0a0c] border border-white/10 p-1 rounded-2xl shadow-2xl transition-colors duration-500" style={{ borderColor: activeColor }}>
           <div className="bg-[#121214] rounded-xl p-4 sm:p-5 flex flex-col gap-3">
@@ -342,7 +348,7 @@ export default function App() {
         </div>
       </motion.div>
 
-      {/* --- RESULT CARD --- */}
+      {/* RESULT CARD */}
       <AnimatePresence mode="wait">
         {result && (
           <motion.div
@@ -370,21 +376,24 @@ export default function App() {
                     <p className="text-gray-400 text-xs flex items-center gap-1"><Activity size={10}/> By {result.author}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
+                    {/* TOMBOL UTAMA */}
                     {primaryLink ? (
                       <a 
                         href={primaryLink} 
                         target="_blank" 
                         rel="noreferrer"
-                        className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all border ${isAudioPlatform ? 'bg-green-500/10 hover:bg-green-500/20 border-green-500/30 text-green-400 col-span-2' : 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 text-blue-400'}`}
+                        className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all border ${isAudioPlatform || !showAudioButton ? 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 text-blue-400 col-span-2' : 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 text-blue-400'}`}
                       >
                          {btnConfig.icon} {btnConfig.label}
                       </a>
                     ) : (
-                      <button disabled className={`flex items-center justify-center gap-2 bg-white/5 text-gray-500 py-3 rounded-xl text-xs font-bold cursor-not-allowed border border-white/5 ${isAudioPlatform ? 'col-span-2' : ''}`}>
+                      <button disabled className={`flex items-center justify-center gap-2 bg-white/5 text-gray-500 py-3 rounded-xl text-xs font-bold cursor-not-allowed border border-white/5 ${isAudioPlatform || !showAudioButton ? 'col-span-2' : ''}`}>
                         {btnConfig.icon} {btnConfig.noData}
                       </button>
                     )}
-                    {!isAudioPlatform && (
+
+                    {/* TOMBOL AUDIO */}
+                    {showAudioButton && (
                       getDownloadLink('audio') ? (
                         <a 
                           href={getDownloadLink('audio')} 
@@ -408,7 +417,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* --- HISTORY --- */}
+      {/* HISTORY */}
       {history.length > 0 && (
         <motion.div 
           initial={{ opacity: 0 }} 
@@ -449,7 +458,7 @@ export default function App() {
         </motion.div>
       )}
 
-      {/* --- REALTIME STATS --- */}
+      {/* REALTIME STATS */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -482,28 +491,25 @@ export default function App() {
         </div>
       </motion.div>
 
-      {/* --- RESPONSIVE DONATE BUTTON (UPDATED V.5.6) --- */}
+      {/* DONATE BUTTON */}
       <motion.a
-        href="https://sociabuzz.com/zeronaut/tribe" 
+        href="https://sociabuzz.com/username_kamu" 
         target="_blank"
         rel="noopener noreferrer"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        // CLASS RESPONSIVE LOGIC:
-        // - HP (Default): mx-auto (tengah), mt-10 (jarak dari atas), w-max (lebar secukupnya).
-        // - Desktop (md): fixed (melayang), bottom-6 right-6 (pojok), m-0 (reset margin).
         className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold text-xs px-5 py-3 rounded-full shadow-[0_0_20px_rgba(255,165,0,0.4)] hover:shadow-[0_0_30px_rgba(255,165,0,0.6)] transition-shadow cursor-pointer w-max mx-auto mt-10 md:fixed md:bottom-6 md:right-6 md:z-50 md:m-0"
       >
         <Heart size={16} className="fill-black animate-pulse" />
-        DONATE
+        DONATE ME
       </motion.a>
 
       <footer className="mt-16 text-center opacity-30 hover:opacity-100 transition-opacity pb-8">
         <p className="text-[10px] text-gray-500 font-mono tracking-[0.2em] mb-2">
-         © 2026 ZeroNaut Downloader. All rights reserved.
+          ZERONAUT SYSTEM // V.6.0
         </p>
         <div className="flex items-center justify-center gap-2 text-[9px] text-gray-600">
-          <span>POWERED BY ZERONAUT</span>
+          <span>EDUCATIONAL PURPOSE ONLY</span>
         </div>
       </footer>
     </div>
