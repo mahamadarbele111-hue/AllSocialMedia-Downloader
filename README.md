@@ -14,13 +14,16 @@
   </p>
 
   <br />
-  <a href="https://drama-tix.vercel.app/" target="_blank">
-
+  <a href="https://zero-nout-downloader.vercel.app/" target="_blank">
   </a>
   <br />
   <br />
 
-  <img src="https://via.placeholder.com/800x450/050505/a5f3fc?text=PREVIEW+ZERONAUT+DOWNLOADER" alt="Zeronaut Preview" width="100%" style="border-radius: 10px; border: 1px solid #333;" />
+  <h2 align="left">Pratinjau Antarmuka</h2>
+  <img src="demo1.png" alt="Zeronaut Desktop Preview" width="100%" style="border-radius: 10px; border: 1px solid #333;" />
+  <br />
+  <br />
+  <img src="demo2.png" alt="Zeronaut Dekstop Preview" width="100%" style="border-radius: 10px; border: 1px solid #333;" />
   <br />
   <br />
 
@@ -36,13 +39,13 @@
 
 <hr />
 
-##  Pendahuluan
+## Pendahuluan
 
 **Zeronaut Downloader** adalah aplikasi Full-Stack yang dirancang untuk mempermudah proses pengunduhan konten media dari berbagai platform sosial. Dengan estetika desain **Futuristik/Cyberpunk**, aplikasi ini memberikan pengalaman pengguna yang mulus baik di perangkat Desktop maupun HP.
 
 Berbeda dengan downloader lainnya, Zeronaut fokus pada ekstraksi media **Tanpa Watermark** dan output berkualitas tinggi (HD), menggunakan backend yang dioptimalkan untuk melewati batasan CORS dan API.
 
-##  Fitur Utama
+## Fitur Utama
 
 - **Dukungan Multi-Platform:** Download dari Instagram (Reels/Post), Facebook, TikTok, YouTube, Pinterest, Spotify, dan banyak lagi.
 - **Tanpa Watermark:** Mengambil versi bersih dari video tanpa logo platform.
@@ -51,7 +54,7 @@ Berbeda dengan downloader lainnya, Zeronaut fokus pada ekstraksi media **Tanpa W
 - **Penanganan Error Pintar:** Sistem yang memberi tahu pengguna jika link tidak valid atau akun bersifat privat.
 - **Siap Vercel:** Struktur folder yang dioptimalkan untuk deployment serverless di Vercel.
 
-##  Teknologi yang Digunakan
+## Teknologi yang Digunakan
 
 ### Frontend
 - **Framework:** React.js (Vite)
@@ -68,9 +71,9 @@ Berbeda dengan downloader lainnya, Zeronaut fokus pada ekstraksi media **Tanpa W
 
 ---
 
-##  Memulai (Local Setup)
+## Memulai (Local Setup)
 
-Ikuti langkah-langkah ini untuk menjalankan project di komputer kamu.
+Ikuti langkah-langkah ini untuk menjalankan project di komputer Anda.
 
 ### Instalasi
 
@@ -95,7 +98,7 @@ Ikuti langkah-langkah ini untuk menjalankan project di komputer kamu.
 
 ---
 
-## 📂 Struktur Proyek
+## Struktur Proyek
 
 zeronaut-downloader/
 ├── api/                # Titik masuk Vercel Serverless
@@ -112,7 +115,7 @@ zeronaut-downloader/
 
 ---
 
-## ☁️ Deployment (Vercel)
+## Deployment (Vercel)
 
 Proyek ini sudah dikonfigurasi untuk **Vercel**.
 
