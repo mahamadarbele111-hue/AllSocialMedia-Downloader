@@ -496,7 +496,6 @@ export default function App() {
         </div>
       </motion.div>
 
-      {/* DONATE BUTTON */}
       <motion.a
         href="https://sociabuzz.com/zeronaut/tribe" 
         target="_blank"
