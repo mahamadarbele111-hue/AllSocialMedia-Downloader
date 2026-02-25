@@ -1,40 +1,89 @@
 const axios = require("axios");
 
 async function fetchYouTubeData(url) {
-  try {
-    const res = await axios.get(
-      "https://api.vidfly.ai/api/media/youtube/download",
-      {
-        params: { url },
-        headers: {
-          accept: "*/*",
-          "content-type": "application/json",
-          "x-app-name": "vidfly-web",
-          "x-app-version": "1.0.0",
-          Referer: "https://vidfly.ai/",
-        },
-      }
-    );
-
-    const data = res.data?.data;
-    if (!data || !data.items || !data.title) {
-      throw new Error("Invalid or empty response from YouTube downloader API");
-    }
-
-    return {
-      title: data.title,
-      thumbnail: data.cover,
-      duration: data.duration,
-      formats: data.items.map((item) => ({
-        type: item.type,
-        quality: item.label || "unknown",
-        extension: item.ext || item.extension || "unknown",
-        url: item.url,
-      })),
-    };
-  } catch (err) {
-    throw new Error(`YouTube downloader request failed: ${err.message}`);
+  if (!url || typeof url !== "string") {
+    throw new Error("Link YouTube harus diisi");
   }
+
+  const formats = [];
+  let videoTitle = "YouTube Media";
+  let videoThumbnail = null;
+  let videoAuthor = "YouTube";
+
+  const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  };
+
+  // ==========================================
+  // 1. EKSTRAK VIDEO (MP4)
+  // ==========================================
+  try {
+    const { data: videoData } = await axios.post(
+      "https://puruboy-api.vercel.app/api/downloader/youtube",
+      { url: url },
+      { headers }
+    );
+    const resultVideo = videoData.result || videoData.data;
+    
+    if (resultVideo && resultVideo.downloadUrl) {
+      videoTitle = resultVideo.title || videoTitle;
+      videoThumbnail = resultVideo.thumbnail || videoThumbnail;
+      videoAuthor = resultVideo.author || videoData.author || videoAuthor;
+      
+      formats.push({
+        type: "video",
+        quality: resultVideo.quality || "HD",
+        extension: "mp4",
+        url: resultVideo.downloadUrl,
+      });
+    }
+  } catch (err) {
+    console.error(`[VIDEO ERROR]`, err.message);
+  }
+
+  // ==========================================
+  // 2. EKSTRAK AUDIO (MP3)
+  // ==========================================
+  try {
+    const { data: audioData } = await axios.post(
+      "https://puruboy-api.vercel.app/api/downloader/ytmp3",
+      { url: url },
+      { headers }
+    );
+    
+    const resultAudio = audioData.result || audioData.data || audioData;
+    
+    // PERBAIKAN: Menambahkan 'download_url' sesuai temuan radar kita
+    const audioLink = resultAudio?.download_url || resultAudio?.downloadUrl || resultAudio?.url || resultAudio?.link || resultAudio?.media;
+
+    if (audioLink) {
+      formats.push({
+        type: "audio",
+        quality: "128kbps",
+        extension: "mp3",
+        url: audioLink,
+      });
+    }
+  } catch (err) {
+    console.error(`[AUDIO ERROR]`, err.message);
+  }
+
+  // ==========================================
+  // 3. FINALISASI
+  // ==========================================
+  if (formats.length === 0) {
+    throw new Error("Gagal mengekstrak Video dan Audio. Server pusat mungkin sedang penuh.");
+  }
+
+  return {
+    title: videoTitle,
+    thumbnail: videoThumbnail,
+    duration: null,
+    author: videoAuthor,
+    formats: formats,
+  };
 }
 
 module.exports = { fetchYouTubeData };

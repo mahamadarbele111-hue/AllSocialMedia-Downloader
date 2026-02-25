@@ -1,68 +1,51 @@
 const axios = require("axios");
-const cheerio = require("cheerio");
 
 async function fetchTikTokData(videoUrl) {
-  const endpoint = "https://tikdownloader.io/api/ajaxSearch";
+  if (!videoUrl || typeof videoUrl !== "string") {
+    throw new Error("Link TikTok harus diisi");
+  }
 
   try {
-    const res = await axios.post(
-      endpoint,
-      new URLSearchParams({ q: videoUrl, lang: "en" }),
+    // Menembak API Puruboy untuk TikTok (Snaptik)
+    const { data } = await axios.post(
+      "https://puruboy-api.vercel.app/api/downloader/snaptik",
+      { url: videoUrl },
       {
         headers: {
-          accept: "*/*",
-          "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "x-requested-with": "XMLHttpRequest",
-          Referer: "https://tikdownloader.io/en",
-        },
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
       }
     );
 
-    const html = res.data.data;
-    const $ = cheerio.load(html);
+    // Menangkap hasil respons dari Puruboy
+    const result = data.result;
 
-    const title = $(".thumbnail h3").text().trim() || null;
-    const thumbnail = $(".thumbnail img").attr("src") || null;
-
-    const downloads = [];
-
-    // ===========================
-    // VIDEO / AUDIO DOWNLOADS
-    // ===========================
-    $(".dl-action a").each((i, el) => {
-      const text = $(el).text().trim();
-      const url = $(el).attr("href");
-
-      // ❗ DO NOT push empty or "#" URLs
-      if (!url || url === "#") return;
-
-      downloads.push({ text, url });
-    });
-
-    // ===========================
-    // PHOTO MODE DOWNLOADS
-    // ===========================
-    const photos = $(".photo-list .download-box li");
-
-    if (photos.length > 0) {
-      photos.each((i, el) => {
-        const text = $(el).find("a").text().trim();
-        const url = $(el).find("a").attr("href");
-
-        if (!url || url === "#") return;
-
-        downloads.push({ text, url });
-      });
+    if (!result || !result.video_info || !result.download_links) {
+      throw new Error("Gagal mendapatkan data TikTok dari server pusat.");
     }
 
+    // --- PROSES TRANSLASI DATA ---
+    // Mengubah struktur 'type' dari Puruboy menjadi 'text' agar sesuai dengan UI Zeronaut
+    const downloads = result.download_links.map((link) => ({
+      text: link.type, // <-- Ini kunci agar tombol di web kamu tetap ada teksnya
+      url: link.url
+    }));
+
+    // Mengembalikan data persis seperti yang diharapkan oleh App.jsx kamu
     return {
-      status: res.data.status,
-      title,
-      thumbnail,
-      downloads,
+      status: result.status || "success",
+      title: result.video_info.title || "TikTok Video",
+      thumbnail: result.video_info.thumbnail || null,
+      downloads: downloads, 
     };
+
   } catch (error) {
-    throw new Error(`TikDownloader request failed: ${error.message}`);
+    // Sistem pelacak error jika API menolak
+    const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
+    console.error(`[TIKTOK ERROR] ${errorMsg}`);
+    throw new Error("Gagal memproses link TikTok. Pastikan link benar dan bukan akun private.");
   }
 }
 

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "@tailwindcss/postcss": "^4.1.18",
     "axios": "^1.13.2",
     "body-parser": "^2.2.1",
