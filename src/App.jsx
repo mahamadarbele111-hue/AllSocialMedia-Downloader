@@ -77,6 +77,8 @@ const softStyles = `
   .extract-btn-inner { display:flex; align-items:center; gap:7px; height:42px; padding:0 20px; background:var(--card); border:none; border-radius:14px; color:var(--text); font-family:'Noto Kufi Arabic','Nunito',sans-serif; font-size:12px; font-weight:900; letter-spacing:0.05em; cursor:pointer; white-space:nowrap; transition:background 0.2s,color 0.2s,transform 0.07s; position:relative; overflow:hidden; }
   .extract-btn-inner:active { transform:scale(0.96) translateY(1px); }
   .extract-btn-inner.loading { opacity:0.75; cursor:not-allowed; }
+  .pulse-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; animation:pulseGlow 1.5s ease-in-out infinite; }
+  @keyframes pulseGlow { 0%,100%{transform:scale(1);opacity:1;box-shadow:0 0 0 0 currentColor} 50%{transform:scale(1.4);opacity:0.7;box-shadow:0 0 0 4px transparent} }
 `;
 
 const platforms = [
@@ -417,7 +419,8 @@ export default function App() {
               <span style={{ color:selected===p.id?'#fff':p.color, display:'flex' }}>
                 {React.cloneElement(p.icon, { size:16 })}
               </span>
-              <span style={{ fontSize:10, fontWeight:800 }}>{lang==='ku'?p.name_ku:p.name}</span>
+              <span style={{ fontSize:10, fontWeight:800, flex:1 }}>{lang==='ku'?p.name_ku:p.name}</span>
+              <span className="pulse-dot" style={{ background: selected===p.id ? '#ffffff' : p.color }} />
             </motion.button>
           ))}
         </motion.div>
