@@ -526,7 +526,7 @@ const i18n = {
    COMPONENT
 ═══════════════════════════════════════════════ */
 export default function App() {
-  const [selected,     setSelected]     = useState(null);
+  const [selected,     setSelected]     = useState(() => localStorage.getItem('arbili_platform') || null);
   const [url,          setUrl]          = useState("");
   const [isLoading,    setIsLoading]    = useState(false);
   const [result,       setResult]       = useState(null);
@@ -562,6 +562,10 @@ export default function App() {
   }, []);
   useEffect(() => { localStorage.setItem('arbili_dark', dark); }, [dark]);
   useEffect(() => { localStorage.setItem('arbili_lang', lang); }, [lang]);
+  useEffect(() => {
+    if (selected) localStorage.setItem('arbili_platform', selected);
+    else          localStorage.removeItem('arbili_platform');
+  }, [selected]);
 
   // ── Online / Offline detection ──
   useEffect(() => {
@@ -899,7 +903,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               whileTap={{ scale: 0.96 }}
-              onClick={() => { setSelected(p.id); setResult(null); }}
+              onClick={() => { if (selected !== p.id) { setSelected(p.id); setResult(null); } }}
               className={`neu-sm platform-btn ${selected === p.id ? 'active' : ''}`}
               style={selected === p.id ? { background: p.color, color: '#fff', boxShadow: `4px 4px 12px ${p.color}55, -2px -2px 8px rgba(255,255,255,0.1)` } : {}}
             >
