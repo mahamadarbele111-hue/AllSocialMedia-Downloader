@@ -5,7 +5,7 @@ import {
   Facebook, Linkedin, Cloud, Video, Mic2, Image, Radio, 
   Layers, Hash, Scissors, Clipboard, CheckCircle, Loader2, FileVideo, 
   FileAudio, Clock, Trash2, Activity, ImageIcon, 
-  AlertTriangle, X, Zap, Users, BarChart3, Heart
+  AlertTriangle, X, Zap, Users, BarChart3
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -60,7 +60,7 @@ export default function App() {
   const [notification, setNotification] = useState(null);
   const [stats, setStats] = useState({ visitors: INITIAL_VISITORS, links: INITIAL_LINKS });
 
-  const activeColor = selected ? platforms.find(p => p.id === selected).color : '#00f2ff';
+  const activeColor = selected ? platforms.find(p => p.id === selected).color : '#ff6b35';
   const activeName = selected ? platforms.find(p => p.id === selected).name : 'Universal';
 
   // --- REWRITE API ENDPOINT ---
@@ -233,12 +233,12 @@ export default function App() {
             className="fixed top-6 left-0 right-0 mx-auto w-[90%] max-w-md z-50 pointer-events-none"
           >
             <div className="bg-black/90 backdrop-blur-xl border border-l-4 rounded-r-lg shadow-[0_0_20px_rgba(0,0,0,0.5)] p-4 flex items-start gap-4 pointer-events-auto"
-                 style={{ borderColor: notification.type === 'error' ? '#ef4444' : '#00f2ff' }}>
-              <div className={`p-2 rounded-full bg-opacity-20 ${notification.type === 'error' ? 'bg-red-500 text-red-500' : 'bg-cyan-500 text-cyan-500'}`}>
+                 style={{ borderColor: notification.type === 'error' ? '#ef4444' : '#ff6b35' }}>
+              <div className={`p-2 rounded-full bg-opacity-20 ${notification.type === 'error' ? 'bg-red-500 text-red-500' : 'bg-orange-500 text-orange-500'}`}>
                 <AlertTriangle size={20} />
               </div>
               <div className="flex-1">
-                <h4 className={`text-xs font-bold tracking-widest uppercase mb-1 ${notification.type === 'error' ? 'text-red-500' : 'text-cyan-400'}`}>
+                <h4 className={`text-xs font-bold tracking-widest uppercase mb-1 ${notification.type === 'error' ? 'text-red-500' : 'text-orange-400'}`}>
                   {notification.type === 'error' ? 'SYSTEM ALERT' : 'NOTIFICATION'}
                 </h4>
                 <p className="text-gray-300 text-xs font-mono leading-relaxed break-words">{notification.message}</p>
@@ -254,7 +254,7 @@ export default function App() {
       {/* HEADER */}
       <header className="mb-10 text-center flex flex-col items-center w-full max-w-2xl mx-auto">
         <div className="flex justify-center items-center gap-2 mb-6 px-3 py-1 rounded-full bg-white/5 border border-white/5">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
             System Operational
           </span>
@@ -264,23 +264,23 @@ export default function App() {
           className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight mb-2 leading-tight bg-clip-text text-transparent bg-[length:200%_auto]"
           animate={{
             backgroundImage: [
-              "linear-gradient(to right, #ffffff, #a5f3fc, #ffffff)",
-              "linear-gradient(to right, #a5f3fc, #ffffff, #a5f3fc)",
-              "linear-gradient(to right, #ffffff, #a5f3fc, #ffffff)"
+              "linear-gradient(to right, #ffffff, #ff6b35, #ffffff)",
+              "linear-gradient(to right, #ff6b35, #ffffff, #ff6b35)",
+              "linear-gradient(to right, #ffffff, #ff6b35, #ffffff)"
             ]
           }}
           transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-          style={{ backgroundImage: "linear-gradient(to right, #ffffff, #a5f3fc, #ffffff)" }}
+          style={{ backgroundImage: "linear-gradient(to right, #ffffff, #ff6b35, #ffffff)" }}
         >
-          ZERONAUT.DOWNLOADER
+          save<sup style={{ fontSize: '0.5em', verticalAlign: 'super' }}>+</sup>
         </motion.h1>
         
         <div className="flex items-center gap-3 mb-8">
-           <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-cyan-500/50"></div>
-           <h2 className="text-[10px] sm:text-xs font-medium tracking-[0.5em] text-cyan-400/80 uppercase whitespace-nowrap">
-              NO WATERMARK ENGINE
+           <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-orange-500/50"></div>
+           <h2 className="text-[10px] sm:text-xs font-medium tracking-[0.5em] text-orange-400/80 uppercase whitespace-nowrap">
+              ARBILI DOWNLOADER
            </h2>
-           <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-cyan-500/50"></div>
+           <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-orange-500/50"></div>
         </div>
       </header>
 
@@ -454,7 +454,7 @@ export default function App() {
                     <p className="text-[10px] text-gray-600">{item.author}</p>
                   </div>
                 </div>
-                <button className="text-gray-500 hover:text-cyan-400 text-[10px] border border-transparent hover:border-cyan-400/30 px-3 py-1.5 rounded transition-all bg-white/5">
+                <button className="text-gray-500 hover:text-orange-400 text-[10px] border border-transparent hover:border-orange-400/30 px-3 py-1.5 rounded transition-all bg-white/5">
                   OPEN
                 </button>
               </motion.div>
@@ -468,15 +468,15 @@ export default function App() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-3xl mt-12 grid grid-cols-2 gap-4"
       >
-        <div className="bg-[#0a0a0c] border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-cyan-500/20 transition-colors">
+        <div className="bg-[#0a0a0c] border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-orange-500/20 transition-colors">
            <div>
               <div className="flex items-center gap-2 mb-1">
-                 <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></div>
-                 <p className="text-[10px] font-bold tracking-widest text-cyan-500/70 uppercase">Live Users</p>
+                 <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
+                 <p className="text-[10px] font-bold tracking-widest text-orange-500/70 uppercase">Live Users</p>
               </div>
               <h3 className="text-2xl font-mono text-white font-bold">{stats.visitors.toLocaleString()}</h3>
            </div>
-           <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 group-hover:scale-110 transition-transform">
+           <div className="p-3 bg-orange-500/10 rounded-xl text-orange-400 group-hover:scale-110 transition-transform">
               <Users size={20} />
            </div>
         </div>
@@ -495,24 +495,14 @@ export default function App() {
         </div>
       </motion.div>
 
-      <motion.a
-        href="https://sociabuzz.com/zeronaut/tribe" 
-        target="_blank"
-        rel="noopener noreferrer"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold text-xs px-5 py-3 rounded-full shadow-[0_0_20px_rgba(255,165,0,0.4)] hover:shadow-[0_0_30px_rgba(255,165,0,0.6)] transition-shadow cursor-pointer w-max mx-auto mt-10 md:fixed md:bottom-6 md:right-6 md:z-50 md:m-0"
-      >
-        <Heart size={16} className="fill-black animate-pulse" />
-        DONATE
-      </motion.a>
+      
 
       <footer className="mt-16 text-center opacity-30 hover:opacity-100 transition-opacity pb-8">
         <p className="text-[10px] text-white font-mono tracking-[0.2em] mb-2">
-          © 2026 ZeroNaut Downloader. All rights reserved.
+          © 2026 ARBILI. All rights reserved.
         </p>
         <div className="flex items-center justify-center gap-2 text-[9px] text-white">
-          <span>Powered by ZeroNaut</span>
+          <span>Powered by <span style={{ color: '#ff6b35' }}>ARBILI</span></span>
         </div>
       </footer>
     </div>
