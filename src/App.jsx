@@ -426,7 +426,7 @@ export default function App() {
   const [history,      setHistory]      = useState([]);
   const [notification, setNotification] = useState(null);
   const [lang,         setLang]         = useState('ku');
-  const [dark,         setDark]         = useState(false);
+  const [dark,         setDark]         = useState(true);
 
   const t    = i18n[lang];
   const logs = loadingLogs[lang];
