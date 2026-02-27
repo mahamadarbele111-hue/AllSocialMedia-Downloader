@@ -529,7 +529,12 @@ export default function App() {
                         )}
                         {(result.view_count || result.views || result.playCount) && (
                           <span style={{ fontSize:10, fontWeight:800, color:'var(--text-sub)', background:'rgba(0,0,0,0.06)', padding:'2px 8px', borderRadius:6, display:'flex', alignItems:'center', gap:4 }}>
-                            👁 {Number(result.view_count || result.views || result.playCount).toLocaleString()}
+                            👁 {result.views || Number(result.view_count || result.playCount).toLocaleString()}
+                          </span>
+                        )}
+                        {result.date && (
+                          <span style={{ fontSize:10, fontWeight:800, color:'var(--text-sub)', background:'rgba(0,0,0,0.06)', padding:'2px 8px', borderRadius:6, display:'flex', alignItems:'center', gap:4 }}>
+                            📅 {result.date}
                           </span>
                         )}
                       </div>
