@@ -5,7 +5,7 @@ import {
   Facebook, Linkedin, Cloud, Video, Mic2, Image, Radio, 
   Layers, Scissors, Clipboard, CheckCircle, Loader2, FileVideo, 
   FileAudio, Clock, Trash2, Activity, ImageIcon, 
-  AlertTriangle, X, Zap, Users, BarChart3, Download
+  AlertTriangle, X, Zap, Download
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -233,16 +233,89 @@ const platforms = [
   { id: 'bluesky',     name: 'Bluesky',     icon: <Cloud />,    color: '#0085FF' },
 ];
 
-const loadingLogs = [
-  "Handshake initialized...",
-  "Requesting content data...",
-  "Bypassing token security...",
-  "Parsing media stream...",
-  "Finalizing extraction..."
-];
+const loadingLogs = {
+  en: [
+    "Handshake initialized...",
+    "Requesting content data...",
+    "Bypassing token security...",
+    "Parsing media stream...",
+    "Finalizing extraction..."
+  ],
+  ku: [
+    "پەیوەندی دەستپێکرا...",
+    "داتای ناوەڕۆک داواکرا...",
+    "دەربازبوون لە پاراستن...",
+    "ڕووخسارە میدیاکە پارسکرا...",
+    "کۆتایی هێنانەکە ئامادەیە..."
+  ]
+};
 
-const INITIAL_VISITORS = 14205;
-const INITIAL_LINKS    = 45902;
+const i18n = {
+  en: {
+    dir: 'ltr',
+    langBtn: 'کوردی',
+    systemOk: 'System Operational',
+    subtitle: 'ARBILI DOWNLOADER',
+    target: 'TARGET',
+    universal: 'Universal',
+    ready: 'READY',
+    placeholder: 'Paste link here...',
+    extract: 'EXTRACT',
+    processing: 'PROCESSING',
+    extracted: 'SUCCESSFULLY EXTRACTED',
+    dlVideo: 'DOWNLOAD VIDEO',
+    dlImage: 'DOWNLOAD IMAGE',
+    dlReel: 'DOWNLOAD REEL',
+    dlTrack: 'DOWNLOAD TRACK',
+    dlAudio: 'MP3',
+    noVideo: 'NO VIDEO',
+    noImage: 'NO IMAGE',
+    noTrack: 'NO TRACK',
+    noPost: 'NO POST',
+    noAudio: 'NO AUDIO',
+    by: 'By',
+    history: 'Recent History',
+    clear: 'CLEAR',
+    errUrl: 'Please insert URL first!',
+    errPlatform: 'Please select a platform first!',
+    errClip: 'Clipboard access denied',
+    errServer: 'Failed to connect to server.',
+    footer1: '© 2026 ARBILI. All rights reserved.',
+    footer2: 'Powered by Save',
+  },
+  ku: {
+    dir: 'rtl',
+    langBtn: 'English',
+    systemOk: 'سیستەم کار دەکات',
+    subtitle: 'داگرتنی ARBILI',
+    target: 'ئامانج',
+    universal: 'گشتی',
+    ready: 'ئامادەیە',
+    placeholder: 'لینکەکە لێرە دابنێ...',
+    extract: 'داگرتن',
+    processing: 'پرۆسەکردن...',
+    extracted: 'بە سەرکەوتوویی دەرهێنرا',
+    dlVideo: 'ڤیدیۆ داگرە',
+    dlImage: 'وێنە داگرە',
+    dlReel: 'ریل داگرە',
+    dlTrack: 'گۆرانی داگرە',
+    dlAudio: 'MP3 داگرە',
+    noVideo: 'ڤیدیۆ نەدۆزرایەوە',
+    noImage: 'وێنە نەدۆزرایەوە',
+    noTrack: 'گۆرانی نەدۆزرایەوە',
+    noPost: 'پۆست نەدۆزرایەوە',
+    noAudio: 'دەنگ نەدۆزرایەوە',
+    by: 'لەلایەن',
+    history: 'مێژووی دوایین',
+    clear: 'سڕینەوە',
+    errUrl: 'تکایە لینکەکە دابنێ!',
+    errPlatform: 'تکایە پلاتفۆرمێک هەڵبژێرە!',
+    errClip: 'مەترسی: دەسترسی کلیپبۆرد نەدرا',
+    errServer: 'پەیوەندی بە سێرڤەر سەرنەکەوت.',
+    footer1: '© ٢٠٢٦ ئەربیلی. هەموو مافەکان پارێزراون.',
+    footer2: 'کارپێکراوی Save',
+  }
+};
 
 /* ═══════════════════════════════════════════════
    COMPONENT
@@ -255,30 +328,31 @@ export default function App() {
   const [logIndex,     setLogIndex]     = useState(0);
   const [history,      setHistory]      = useState([]);
   const [notification, setNotification] = useState(null);
-  const [stats,        setStats]        = useState({ visitors: INITIAL_VISITORS, links: INITIAL_LINKS });
+  const [lang,         setLang]         = useState('ku');
+
+  const t  = i18n[lang];
+  const logs = loadingLogs[lang];
 
   const activePlatform = selected ? platforms.find(p => p.id === selected) : null;
   const activeColor    = activePlatform?.color || '#ff6b35';
-  const activeName     = activePlatform?.name  || 'Universal';
+  const activeName     = activePlatform?.name  || t.universal;
   const endpoint       = selected ? `/api/${selected}` : '';
+
+  useEffect(() => {
+    document.documentElement.dir = t.dir;
+    document.documentElement.lang = lang;
+  }, [lang, t.dir]);
 
   useEffect(() => {
     let interval;
     if (isLoading) {
       setLogIndex(0);
       interval = setInterval(() => {
-        setLogIndex(prev => prev < loadingLogs.length - 1 ? prev + 1 : prev);
+        setLogIndex(prev => prev < logs.length - 1 ? prev + 1 : prev);
       }, 800);
     }
     return () => clearInterval(interval);
-  }, [isLoading]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => ({ ...prev, visitors: prev.visitors + Math.floor(Math.random() * 3) }));
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [isLoading, logs]);
 
   const showNotify = (message, type = 'error') => {
     setNotification({ message, type });
@@ -290,7 +364,7 @@ export default function App() {
       const text = await navigator.clipboard.readText();
       setUrl(text);
     } catch {
-      showNotify("Clipboard access denied", "error");
+      showNotify(t.errClip, "error");
     }
   };
 
@@ -340,11 +414,11 @@ export default function App() {
     const videoLink = getDownloadLink('video');
     const isImage   = videoLink && /\.(jpg|webp|png)/i.test(String(videoLink));
     switch (selected) {
-      case 'pinterest':   return { label: 'DOWNLOAD IMAGE', icon: <ImageIcon size={14} />,  noData: 'NO IMAGE' };
-      case 'spotify':     return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />,      noData: 'NO TRACK' };
-      case 'soundcloud':  return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />,      noData: 'NO TRACK' };
-      case 'instagram':   return { label: isImage ? 'DOWNLOAD IMAGE' : 'DOWNLOAD REEL', icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, noData: 'NO POST' };
-      default:            return { label: 'DOWNLOAD VIDEO', icon: <FileVideo size={14} />,  noData: 'NO VIDEO' };
+      case 'pinterest':   return { label: t.dlImage, icon: <ImageIcon size={14} />,  noData: t.noImage };
+      case 'spotify':     return { label: t.dlTrack, icon: <Music size={14} />,      noData: t.noTrack };
+      case 'soundcloud':  return { label: t.dlTrack, icon: <Music size={14} />,      noData: t.noTrack };
+      case 'instagram':   return { label: isImage ? t.dlImage : t.dlReel, icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, noData: t.noPost };
+      default:            return { label: t.dlVideo, icon: <FileVideo size={14} />,  noData: t.noVideo };
     }
   };
 
@@ -354,16 +428,15 @@ export default function App() {
   const showAudioButton = !isAudioPlatform && !['instagram','pinterest'].includes(selected);
 
   const handleExtract = async () => {
-    if (!url)      return showNotify("Please insert URL first!", "error");
-    if (!selected) return showNotify("Please select a platform first!", "error");
+    if (!url)      return showNotify(t.errUrl, "error");
+    if (!selected) return showNotify(t.errPlatform, "error");
     setIsLoading(true); setResult(null);
     try {
       const response = await axios.post(endpoint, { url });
       setResult(response.data);
       addToHistory(response.data);
-      setStats(prev => ({ ...prev, links: prev.links + 1 }));
     } catch (error) {
-      let msg = "Failed to connect to server.";
+      let msg = t.errServer;
       if (error.response?.data) {
         const d = error.response.data;
         msg = d.message || d.error || d.details || JSON.stringify(d);
@@ -411,12 +484,19 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           style={{ textAlign: 'center', marginBottom: 36, width: '100%', maxWidth: 680 }}
         >
-          {/* Online badge */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          {/* Online badge + lang toggle */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginBottom: 20 }}>
             <span className="badge-online">
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#48bb78', display: 'inline-block', animation: 'pulse 2s infinite' }} />
-              System Operational
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#48bb78', display: 'inline-block' }} />
+              {t.systemOk}
             </span>
+            <button
+              onClick={() => setLang(l => l === 'ku' ? 'en' : 'ku')}
+              className="neu-btn"
+              style={{ padding: '6px 14px', fontSize: 11, fontWeight: 800, color: '#ff6b35', borderRadius: 30 }}
+            >
+              {t.langBtn}
+            </button>
           </div>
 
           {/* Logo */}
@@ -428,7 +508,7 @@ export default function App() {
 
           {/* Subtitle */}
           <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--text-sub)', marginTop: 12 }}>
-            — &nbsp; ARBILI DOWNLOADER &nbsp; —
+            — &nbsp; {t.subtitle} &nbsp; —
           </p>
         </motion.header>
 
@@ -470,10 +550,10 @@ export default function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-sub)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: activeColor, display: 'inline-block' }} />
-                TARGET: <span style={{ color: activeColor }}>{activeName}</span>
+                {t.target}: <span style={{ color: activeColor }}>{activeName}</span>
               </span>
               <span style={{ color: isLoading ? '#ff6b35' : 'var(--text-sub)' }}>
-                {isLoading ? `> ${loadingLogs[logIndex]}` : 'READY'}
+                {isLoading ? `> ${logs[logIndex]}` : t.ready}
               </span>
             </div>
 
@@ -486,7 +566,7 @@ export default function App() {
                   value={url}
                   onChange={e => setUrl(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleExtract()}
-                  placeholder={`Paste ${activeName} link here...`}
+                  placeholder={`${t.placeholder}`}
                   style={{ height: 48 }}
                 />
                 <button onClick={handlePaste} className="neu-btn" style={{ padding: '8px 10px', flexShrink: 0 }}>
@@ -520,7 +600,7 @@ export default function App() {
                 }}
               >
                 {isLoading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={16} />}
-                {isLoading ? 'PROCESSING' : 'EXTRACT'}
+                {isLoading ? t.processing : t.extract}
               </motion.button>
             </div>
           </div>
@@ -539,7 +619,7 @@ export default function App() {
                 {/* success header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#48bb78' }}>
                   <CheckCircle size={14} />
-                  SUCCESSFULLY EXTRACTED
+                  {t.extracted}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
@@ -554,7 +634,7 @@ export default function App() {
                   <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
                     <div>
                       <h3 style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{result.title}</h3>
-                      {result.author && <p style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 700 }}>By {result.author}</p>}
+                      {result.author && <p style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 700 }}>{t.by} {result.author}</p>}
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: showAudioButton && getDownloadLink('audio') ? '1fr 1fr' : '1fr', gap: 10 }}>
@@ -570,7 +650,7 @@ export default function App() {
 
                       {showAudioButton && getDownloadLink('audio') && (
                         <a href={getDownloadLink('audio')} target="_blank" rel="noreferrer" className="dl-audio-btn">
-                          <FileAudio size={14} /> MP3
+                          <FileAudio size={14} /> {t.dlAudio}
                         </a>
                       )}
                     </div>
@@ -592,10 +672,10 @@ export default function App() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingInline: 4 }}>
                 <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-sub)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Clock size={12} /> Recent History
+                  <Clock size={12} /> {t.history}
                 </span>
                 <button onClick={clearHistory} className="neu-btn" style={{ padding: '5px 12px', fontSize: 10, fontWeight: 800, color: '#e53e3e', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Trash2 size={10} /> CLEAR
+                  <Trash2 size={10} /> {t.clear}
                 </button>
               </div>
 
@@ -622,43 +702,13 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* ── STATS ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          style={{ width: '100%', maxWidth: 680, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 40 }}
-        >
-          {/* Live Users */}
-          <div className="neu" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 22 }}>
-            <div>
-              <p className="stat-label" style={{ marginBottom: 6, color: '#ff6b35' }}>Live Users</p>
-              <p className="stat-value">{stats.visitors.toLocaleString()}</p>
-            </div>
-            <div className="neu-btn" style={{ padding: 14, borderRadius: 16 }}>
-              <Users size={22} color="#ff6b35" />
-            </div>
-          </div>
-
-          {/* Processed */}
-          <div className="neu" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 22 }}>
-            <div>
-              <p className="stat-label" style={{ marginBottom: 6, color: '#48bb78' }}>Processed</p>
-              <p className="stat-value">{stats.links.toLocaleString()}</p>
-            </div>
-            <div className="neu-btn" style={{ padding: 14, borderRadius: 16 }}>
-              <BarChart3 size={22} color="#48bb78" />
-            </div>
-          </div>
-        </motion.div>
-
         {/* ── FOOTER ── */}
         <footer style={{ textAlign: 'center', paddingBottom: 24 }}>
           <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-sub)', marginBottom: 4 }}>
-            © 2026 <span style={{ color: '#ff6b35' }}>ARBILI</span>. All rights reserved.
+            {t.footer1}
           </p>
           <p style={{ fontSize: 9, color: 'var(--text-sub)', fontWeight: 600, letterSpacing: '0.1em' }}>
-            Powered by Save<sup style={{ color: '#ff6b35', fontSize: '0.7em' }}>+</sup>
+            {t.footer2} <sup style={{ color: '#ff6b35', fontSize: '0.7em' }}>+</sup>
           </p>
         </footer>
 
