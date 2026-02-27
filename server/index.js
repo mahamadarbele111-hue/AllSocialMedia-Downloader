@@ -19,7 +19,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // ═══════════════════════════════════════════════════
-// ✅ ئینستاگرام: ڕاستەوخۆ داونلۆد (stream بۆ کلاینت)
+// ✅ ئینستاگرام: ڕاستەوخۆ داونلۆد
 // POST /api/instagram/download
 // ═══════════════════════════════════════════════════
 app.post('/api/instagram/download', async (req, res) => {
@@ -36,7 +36,7 @@ app.post('/api/instagram/download', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
-// ROUTE UNIVERSAL — هەموو پلاتفۆرمەکان (JSON)
+// ROUTE UNIVERSAL — هەموو پلاتفۆرمەکان
 // POST /api/:platform
 // ═══════════════════════════════════════════════════
 app.post('/api/:platform', async (req, res) => {
