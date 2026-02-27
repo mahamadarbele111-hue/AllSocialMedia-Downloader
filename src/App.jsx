@@ -77,8 +77,8 @@ const softStyles = `
   .extract-btn-inner { display:flex; align-items:center; gap:7px; height:42px; padding:0 20px; background:var(--card); border:none; border-radius:14px; color:var(--text); font-family:'Noto Kufi Arabic','Nunito',sans-serif; font-size:12px; font-weight:900; letter-spacing:0.05em; cursor:pointer; white-space:nowrap; transition:background 0.2s,color 0.2s,transform 0.07s; position:relative; overflow:hidden; }
   .extract-btn-inner:active { transform:scale(0.96) translateY(1px); }
   .extract-btn-inner.loading { opacity:0.75; cursor:not-allowed; }
-  .pulse-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; animation:pulseGlow 1.5s ease-in-out infinite; }
-  @keyframes pulseGlow { 0%,100%{transform:scale(1);opacity:1;box-shadow:0 0 0 0 currentColor} 50%{transform:scale(1.4);opacity:0.7;box-shadow:0 0 0 4px transparent} }
+  .pulse-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; animation:pulseGlow 2.8s ease-in-out infinite; }
+  @keyframes pulseGlow { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.25);opacity:0.6;} }
 `;
 
 const platforms = [
@@ -413,7 +413,13 @@ export default function App() {
           {platforms.map((p, i) => (
             <motion.button key={p.id} initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }}
               transition={{ delay:i*0.05 }} whileTap={{ scale:0.96 }}
-              onClick={() => { setSelected(s => s===p.id?null:p.id); setResult(null); }}
+              onClick={() => {
+                if (p.id === 'snapchat') {
+                  showNotify(lang==='ku' ? '⚠️ سناپچات لەئێستادا بەردەست نیە' : '⚠️ Snapchat is not available yet', 'error');
+                  return;
+                }
+                setSelected(s => s===p.id?null:p.id); setResult(null);
+              }}
               className={`neu-sm platform-btn ${selected===p.id?'active':''}`}
               style={selected===p.id?{ background:p.color, color:'#fff', boxShadow:`4px 4px 12px ${p.color}55,-2px -2px 8px rgba(255,255,255,0.1)` }:{}}>
               <span style={{ color:selected===p.id?'#fff':p.color, display:'flex' }}>
