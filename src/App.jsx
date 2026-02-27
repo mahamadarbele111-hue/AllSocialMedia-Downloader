@@ -368,7 +368,7 @@ const softStyles = `
     cursor: pointer;
     border: none;
     text-decoration: none;
-    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, opacity 0.3s ease, visibility 0.3s ease;
     animation: waPulse 3s ease-in-out infinite;
     z-index: 90;
   }
@@ -538,6 +538,7 @@ export default function App() {
   const [typedPlaceholder, setTypedPlaceholder] = useState('');
   const [copied,       setCopied]       = useState(null);   // which url was copied
   const [isOnline,     setIsOnline]     = useState(true);
+  const [showFab,      setShowFab]      = useState(false);
   const [onlineBanner, setOnlineBanner] = useState(null);   // null | 'offline' | 'online'
   const [deferredPrompt, setDeferredPrompt] = useState(null); // PWA install
 
@@ -566,6 +567,13 @@ export default function App() {
     if (selected) localStorage.setItem('arbili_platform', selected);
     else          localStorage.removeItem('arbili_platform');
   }, [selected]);
+
+  // ── Show FAB on scroll ──
+  useEffect(() => {
+    const onScroll = () => setShowFab(window.scrollY > 80);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // ── Online / Offline detection ──
   useEffect(() => {
@@ -1153,6 +1161,7 @@ export default function App() {
         target="_blank"
         rel="noreferrer"
         className="wa-fab"
+        style={{ opacity: showFab ? 1 : 0, visibility: showFab ? 'visible' : 'hidden', transform: showFab ? 'scale(1)' : 'scale(0.7)' }}
       >
         <div className="wa-fab-tooltip">
           {lang === 'ku' ? 'فیدباک بنێرە' : 'Send Feedback'}
