@@ -1,6 +1,7 @@
 const axios = require("axios");
+const path = require("path");
 
-async function fetchInstagram(url) {
+async function fetchInstagram(url, res) {
   if (!url || typeof url !== "string") {
     throw new Error("Link Instagram harus diisi");
   }
@@ -29,70 +30,95 @@ async function fetchInstagram(url) {
     }
 
     const result = data.result;
-    const downloads = [];
 
-    result.medias.forEach(mediaItem => {
-      const isVideo = mediaItem.format === 'mp4'
-        || String(mediaItem.url || '').includes('.mp4')
-        || String(mediaItem.type || '').toLowerCase() === 'video';
+    // ── بەهترین مێدیا هەڵبژێرە ──
+    let selectedMedia = null;
 
-      // ── بەرێوەچوونی ڤیدیۆ بەبێ دەنگ ──
-      // ئەگەر ڤیدیۆی mute بوو بەڵام تر هیچ ڤیدیۆی تر نییە، زیادی بکە
-      // ئەگەر ڤیدیۆی دەنگدار هەیە ئەوکات mute skip بکە
+    for (const mediaItem of result.medias) {
+      const isVideo =
+        mediaItem.format === "mp4" ||
+        String(mediaItem.url || "").includes(".mp4") ||
+        String(mediaItem.type || "").toLowerCase() === "video";
+
       if (isVideo && mediaItem.mute === "yes") {
-        const hasNonMutedVideo = result.medias.some(m => {
-          const iv = m.format === 'mp4' || String(m.url || '').includes('.mp4');
+        const hasNonMuted = result.medias.some(m => {
+          const iv = m.format === "mp4" || String(m.url || "").includes(".mp4");
           return iv && m.mute !== "yes";
         });
-        if (hasNonMutedVideo) return; // skip muted if better exists
+        if (hasNonMuted) continue;
       }
 
-      downloads.push({
-        url:       mediaItem.url,
-        type:      isVideo ? 'video' : 'image',
-        text:      isVideo ? 'video' : 'image',   // ← frontend type detection
-        label:     isVideo
-          ? `ڤیدیۆ (${mediaItem.quality || 'HD'})`
-          : `وێنە (${mediaItem.quality || 'Original'})`,
-        extension: mediaItem.format || (isVideo ? 'mp4' : 'jpg'),
-        quality:   mediaItem.quality || null,
-      });
+      selectedMedia = mediaItem;
+      break;
+    }
+
+    if (!selectedMedia) {
+      selectedMedia = result.medias[0];
+    }
+
+    const isVideo =
+      selectedMedia.format === "mp4" ||
+      String(selectedMedia.url || "").includes(".mp4") ||
+      String(selectedMedia.type || "").toLowerCase() === "video";
+
+    const extension = selectedMedia.format || (isVideo ? "mp4" : "jpg");
+    const filename = `instagram_download_${Date.now()}.${extension}`;
+    const mimeType = isVideo ? "video/mp4" : "image/jpeg";
+
+    // ── ڕاستەوخۆ Stream بکە بۆ کلاینت ──
+    const fileStream = await axios.get(selectedMedia.url, {
+      responseType: "stream",
+      timeout: 30000,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      }
     });
 
-    // ── مطمئن ببە لانیکەم یەک دانە هەیە ──
-    if (downloads.length === 0) {
-      // fallback: هەموویان زیادبکە بەبێ skip
-      result.medias.forEach(mediaItem => {
-        const isVideo = mediaItem.format === 'mp4' || String(mediaItem.url || '').includes('.mp4');
-        downloads.push({
-          url:       mediaItem.url,
-          type:      isVideo ? 'video' : 'image',
-          text:      isVideo ? 'video' : 'image',
-          label:     isVideo ? 'ڤیدیۆ' : 'وێنە',
-          extension: mediaItem.format || (isVideo ? 'mp4' : 'jpg'),
-        });
-      });
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Type", mimeType);
+
+    if (fileStream.headers["content-length"]) {
+      res.setHeader("Content-Length", fileStream.headers["content-length"]);
     }
 
-    if (downloads.length === 0) {
-      throw new Error("هیچ لینکی داونلۆدی دۆزرایەوە.");
-    }
+    // ── Stream داتا بۆ کلاینت ──
+    fileStream.data.pipe(res);
 
-    const thumbnailUrl = result.thumbnail
-      || "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/2048px-Instagram_logo_2016.svg.png";
-
-    return {
-      title:     result.title    || "Instagram Content",
-      author:    data.author     || result.author || "Instagram User",
-      thumbnail: thumbnailUrl,
-      downloads: downloads,   // ← frontend دەگەڕێت بەدوای 'downloads' دا
-    };
+    fileStream.data.on("error", (err) => {
+      console.error("[Stream Error]:", err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Stream شکست" });
+      }
+    });
 
   } catch (error) {
-    const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
+    const errorMsg = error.response
+      ? JSON.stringify(error.response.data)
+      : error.message;
     console.error("[IG Error]:", errorMsg);
-    throw new Error("Gagal mengambil data. Pastikan link valid dan bukan akun private.");
+
+    if (!res.headersSent) {
+      throw new Error("Gagal mengambil data. Pastikan link valid dan bukan akun private.");
+    }
   }
 }
 
 module.exports = { fetchInstagram };
+چۆن بەکاری بهێنیت لە Router دا:
+// routes/instagram.js
+const express = require("express");
+const router = express.Router();
+const { fetchInstagram } = require("../services/instagram");
+
+router.post("/download", async (req, res) => {
+  const { url } = req.body;
+  try {
+    await fetchInstagram(url, res); // ← res دەدەیت بۆ فەنکشن
+  } catch (error) {
+    if (!res.headersSent) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+});
+
+module.exports = router;
