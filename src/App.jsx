@@ -80,6 +80,15 @@ const softStyles = `
   .neu-btn:hover { box-shadow: 3px 3px 8px var(--shadow-d), -3px -3px 8px var(--shadow-l); }
   .neu-btn:active { box-shadow: inset 3px 3px 8px var(--shadow-d), inset -3px -3px 8px var(--shadow-l); }
 
+  /* ── Keyboard feel for all clickable elements ── */
+  button:active, a.dl-video-btn:active, a.dl-audio-btn:active {
+    transform: scale(0.97) translateY(1px) !important;
+    transition: transform 0.07s ease !important;
+  }
+  button:not(:active), a.dl-video-btn:not(:active), a.dl-audio-btn:not(:active) {
+    transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s ease, filter 0.15s ease !important;
+  }
+
   .logo-title {
     font-size: 3rem;
     font-weight: 900;
@@ -115,6 +124,10 @@ const softStyles = `
     box-shadow: inset 3px 3px 8px rgba(0,0,0,0.2), inset -2px -2px 5px rgba(255,255,255,0.08);
   }
   .platform-btn:hover:not(.active) { color: var(--text); }
+  .platform-btn:active {
+    transform: scale(0.95) !important;
+    box-shadow: inset 3px 3px 8px var(--shadow-d), inset -3px -3px 8px var(--shadow-l) !important;
+  }
 
   .neu-input {
     background: transparent;
@@ -144,12 +157,44 @@ const softStyles = `
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: 5px 5px 15px rgba(255,107,53,0.35), -3px -3px 8px rgba(255,255,255,0.1);
+    box-shadow: 5px 5px 15px rgba(255,107,53,0.4), -3px -3px 8px rgba(255,255,255,0.1), 0 0 0 rgba(255,107,53,0);
     transition: all 0.2s ease;
     text-decoration: none;
     width: 100%;
+    position: relative;
+    overflow: hidden;
+    animation: btnGlow 2.5s ease-in-out infinite;
   }
-  .dl-video-btn:hover { box-shadow: 3px 3px 10px rgba(255,107,53,0.5); transform: translateY(-1px); }
+  .dl-video-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+    animation: shimmer 2.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .dl-video-btn:hover {
+    box-shadow: 4px 4px 20px rgba(255,107,53,0.65), -3px -3px 10px rgba(255,255,255,0.15), 0 0 30px rgba(255,107,53,0.3);
+    transform: translateY(-2px) scale(1.01);
+    filter: brightness(1.08);
+  }
+  .dl-video-btn:active {
+    transform: translateY(1px) scale(0.98);
+    box-shadow: inset 3px 3px 8px rgba(0,0,0,0.2), inset -2px -2px 5px rgba(255,255,255,0.05);
+    filter: brightness(0.95);
+  }
+  @keyframes shimmer {
+    0%   { left: -100%; opacity: 0; }
+    20%  { opacity: 1; }
+    60%  { left: 160%; opacity: 0; }
+    100% { left: 160%; opacity: 0; }
+  }
+  @keyframes btnGlow {
+    0%,100% { box-shadow: 5px 5px 15px rgba(255,107,53,0.4), -3px -3px 8px rgba(255,255,255,0.1); }
+    50%      { box-shadow: 5px 5px 22px rgba(255,107,53,0.65), -3px -3px 8px rgba(255,255,255,0.15), 0 0 18px rgba(255,107,53,0.25); }
+  }
 
   .dl-audio-btn {
     background: var(--card);
@@ -171,7 +216,8 @@ const softStyles = `
     text-decoration: none;
     width: 100%;
   }
-  .dl-audio-btn:hover { transform: translateY(-1px); }
+  .dl-audio-btn:hover { transform: translateY(-2px); box-shadow: 6px 6px 14px var(--shadow-d), -6px -6px 14px var(--shadow-l); }
+  .dl-audio-btn:active { transform: scale(0.97) translateY(1px); box-shadow: inset 3px 3px 8px var(--shadow-d), inset -3px -3px 8px var(--shadow-l); }
 
   .badge-online {
     display: inline-flex;
