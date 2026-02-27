@@ -1,71 +1,183 @@
 const axios = require("axios");
 
+// ── هەڵەست بە چەند API ──
+const API_LIST = [
+  {
+    name: "snapinsta",
+    fetch: async (url) => {
+      const { data } = await axios.post(
+        "https://snapinsta.app/action.php",
+        new URLSearchParams({ url, lang: "en" }),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": "https://snapinsta.app/",
+            "Origin": "https://snapinsta.app"
+          },
+          timeout: 12000
+        }
+      );
+
+      const mp4Matches = [...(data.match(/href="(https?:\/\/[^"]+\.mp4[^"]*)"/g) || [])];
+      const imgMatches = [...(data.match(/href="(https?:\/\/[^"]+\.(jpg|jpeg|png)[^"]*)"/g) || [])];
+
+      const medias = [];
+      mp4Matches.forEach(m => {
+        const u = m.replace(/href="|"/g, '');
+        if (u.startsWith('http')) medias.push({ url: u, format: 'mp4', mute: 'no' });
+      });
+      imgMatches.forEach(m => {
+        const u = m.replace(/href="|"/g, '');
+        if (u.startsWith('http')) medias.push({ url: u, format: 'jpg', mute: 'no' });
+      });
+
+      if (medias.length === 0) throw new Error("snapinsta: no media found");
+      return { medias, thumbnail: null, title: "Instagram Content" };
+    }
+  },
+  {
+    name: "puruboy",
+    fetch: async (url) => {
+      const { data } = await axios.post(
+        "https://puruboy-api.vercel.app/api/downloader/instagram",
+        { url },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+          },
+          timeout: 12000
+        }
+      );
+      if (!data.success || !data.result?.medias?.length) throw new Error("puruboy: no media");
+      return {
+        medias: data.result.medias,
+        thumbnail: data.result.thumbnail || null,
+        title: data.result.title || "Instagram Content"
+      };
+    }
+  },
+  {
+    name: "igram",
+    fetch: async (url) => {
+      const { data } = await axios.post(
+        "https://igram.world/api/convert",
+        { url },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://igram.world/",
+            "Origin": "https://igram.world"
+          },
+          timeout: 12000
+        }
+      );
+      const items = data?.result || data?.medias || data?.links || [];
+      if (!items.length) throw new Error("igram: no media");
+      const medias = items.map(i => ({
+        url: i.url || i.link,
+        format: (i.type || i.ext || '').includes('mp4') ? 'mp4' : 'jpg',
+        mute: 'no'
+      }));
+      return { medias, thumbnail: null, title: "Instagram Content" };
+    }
+  },
+  {
+    name: "savefrom",
+    fetch: async (url) => {
+      const { data } = await axios.get(
+        `https://worker.sf-tools.com/savefrom.php?sf_url=${encodeURIComponent(url)}&lang=en`,
+        {
+          headers: {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json"
+          },
+          timeout: 12000
+        }
+      );
+      const links = data?.url || [];
+      if (!links.length) throw new Error("savefrom: no media");
+      const medias = links.map(l => ({
+        url: l.url,
+        format: l.ext || 'mp4',
+        mute: 'no'
+      }));
+      return { medias, thumbnail: data.thumb || null, title: data.meta?.title || "Instagram Content" };
+    }
+  }
+];
+
 async function fetchInstagram(url, res) {
-  // 1. Validasi URL Basic
   if (!url || typeof url !== "string") {
-    throw new Error("Link Instagram harus diisi");
+    return res.status(400).json({ error: "لینکی ئینستاگرام پێویستە" });
   }
   if (!url.includes("instagram.com")) {
-    throw new Error("URL tidak valid. Harap masukkan link Instagram yang benar.");
+    return res.status(400).json({ error: "لینکی ئینستاگرام دروست نییە" });
   }
 
-  try {
-    console.log("[IG] Menggunakan Puruboy API untuk:", url);
+  let lastError = null;
+  let resultData = null;
 
-    // 2. Request ke API Puruboy menggunakan metode POST
-    const { data } = await axios.post(
-      "https://puruboy-api.vercel.app/api/downloader/instagram",
-      { url: url },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        },
-        timeout: 15000
-      }
-    );
-
-    // 3. Cek Error dari API
-    if (!data.success || !data.result || !data.result.medias || data.result.medias.length === 0) {
-      throw new Error("API tidak menemukan media (Mungkin akun Private atau link salah).");
-    }
-
-    const result = data.result;
-
-    // 4. هەڵبژاردنی باشترین مێدیا (هەمان لۆجیکی کۆنە)
-    let selectedMedia = null;
-
-    for (const mediaItem of result.medias) {
-      const isVideo = mediaItem.format === 'mp4' ||
-                      String(mediaItem.url || '').includes('.mp4');
-
-      // Skip ڤیدیۆی bێ دەنگ ئەگەر ڤیدیۆی دەنگدار هەیە
-      if (isVideo && mediaItem.mute === "yes") {
-        const hasNonMuted = result.medias.some(m => {
-          const iv = m.format === 'mp4' || String(m.url || '').includes('.mp4');
-          return iv && m.mute !== "yes";
-        });
-        if (hasNonMuted) continue;
-      }
-
-      selectedMedia = mediaItem;
+  // ── هەوڵ بدە هەر API یەک بەرید ──
+  for (const api of API_LIST) {
+    try {
+      console.log(`[IG] Trying: ${api.name}`);
+      resultData = await api.fetch(url);
+      console.log(`[IG] ✅ ${api.name} succeeded — medias: ${resultData.medias.length}`);
       break;
+    } catch (err) {
+      console.warn(`[IG] ❌ ${api.name} failed:`, err.message);
+      lastError = err;
+    }
+  }
+
+  if (!resultData || !resultData.medias?.length) {
+    return res.status(500).json({
+      error: "هیچ API یەک کارنەکرد. لینکەکە private نەبێت یان دووبارە هەوڵ بدەرەوە.",
+      detail: lastError?.message
+    });
+  }
+
+  // ── بەهترین مێدیا هەڵبژێرە ──
+  let selectedMedia = null;
+
+  for (const mediaItem of resultData.medias) {
+    const isVideo =
+      mediaItem.format === "mp4" ||
+      String(mediaItem.url || "").includes(".mp4") ||
+      String(mediaItem.type || "").toLowerCase() === "video";
+
+    if (isVideo && mediaItem.mute === "yes") {
+      const hasNonMuted = resultData.medias.some(m => {
+        const iv = m.format === "mp4" || String(m.url || "").includes(".mp4");
+        return iv && m.mute !== "yes";
+      });
+      if (hasNonMuted) continue;
     }
 
-    if (!selectedMedia) {
-      throw new Error("Link download valid tidak ditemukan.");
-    }
+    selectedMedia = mediaItem;
+    break;
+  }
 
-    const isVideo = selectedMedia.format === 'mp4' ||
-                    String(selectedMedia.url || '').includes('.mp4');
-    const extension = selectedMedia.format || (isVideo ? 'mp4' : 'jpg');
-    const filename  = `instagram_${Date.now()}.${extension}`;
-    const mimeType  = isVideo ? 'video/mp4' : 'image/jpeg';
+  if (!selectedMedia) selectedMedia = resultData.medias[0];
 
-    console.log("[IG] Streaming:", selectedMedia.url.substring(0, 80));
+  const isVideo =
+    selectedMedia.format === "mp4" ||
+    String(selectedMedia.url || "").includes(".mp4") ||
+    String(selectedMedia.type || "").toLowerCase() === "video";
 
-    // 5. ✅ ڕاستەوخۆ Stream بکە بۆ کلاینت (داونلۆدی ڕاستەوخۆ)
+  const extension = selectedMedia.format || (isVideo ? "mp4" : "jpg");
+  const filename  = `instagram_${Date.now()}.${extension}`;
+  const mimeType  = isVideo ? "video/mp4" : "image/jpeg";
+
+  console.log(`[IG] Streaming file: ${selectedMedia.url.substring(0, 80)}...`);
+
+  // ── Stream فایل بۆ کلاینت ──
+  try {
     const fileStream = await axios.get(selectedMedia.url, {
       responseType: "stream",
       timeout: 60000,
@@ -93,14 +205,11 @@ async function fetchInstagram(url, res) {
       }
     });
 
-  } catch (error) {
-    const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
-    console.error("[IG Service Error]:", errorMsg);
+  } catch (streamErr) {
+    console.error("[Stream Fallback] Redirecting to:", selectedMedia.url.substring(0, 60));
     if (!res.headersSent) {
-      res.status(500).json({
-        error: "Gagal mengambil data dari server. Pastikan link valid dan bukan dari akun private.",
-        details: errorMsg
-      });
+      // Fallback: redirect ڕاستەوخۆ بۆ لینک
+      res.redirect(302, selectedMedia.url);
     }
   }
 }
