@@ -536,11 +536,11 @@ export default function App() {
   const [lang,         setLang]         = useState('ku');
   const [dark,         setDark]         = useState(true);
   const [typedPlaceholder, setTypedPlaceholder] = useState('');
-  const [copied,       setCopied]       = useState(null);   // which url was copied
+  const [copied,       setCopied]       = useState(null);
   const [isOnline,     setIsOnline]     = useState(true);
   const [showFab,      setShowFab]      = useState(false);
-  const [onlineBanner, setOnlineBanner] = useState(null);   // null | 'offline' | 'online'
-  const [deferredPrompt, setDeferredPrompt] = useState(null); // PWA install
+  const [onlineBanner, setOnlineBanner] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const t    = i18n[lang];
   const logs = loadingLogs[lang];
@@ -554,7 +554,6 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   }, [dark]);
 
-  // ── LocalStorage: save & restore theme + lang ──
   useEffect(() => {
     const savedDark = localStorage.getItem('arbili_dark');
     const savedLang = localStorage.getItem('arbili_lang');
@@ -568,14 +567,12 @@ export default function App() {
     else          localStorage.removeItem('arbili_platform');
   }, [selected]);
 
-  // ── Show FAB on scroll ──
   useEffect(() => {
     const onScroll = () => setShowFab(window.scrollY > 80);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // ── Online / Offline detection ──
   useEffect(() => {
     const goOffline = () => { setIsOnline(false); setOnlineBanner('offline'); };
     const goOnline  = () => {
@@ -591,42 +588,29 @@ export default function App() {
     };
   }, []);
 
-  // ── PWA install prompt ──
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  // ── Typing animation for placeholder ──
   useEffect(() => {
     const full = t.placeholder;
     let i = 0;
     let timeoutId;
     setTypedPlaceholder('');
-
     const typeChar = () => {
       i++;
       setTypedPlaceholder(full.slice(0, i));
-      if (i < full.length) {
-        timeoutId = setTimeout(typeChar, 130);
-      } else {
-        // وەستان ٤ چرکە پێش سڕینەوە
-        timeoutId = setTimeout(deleteChar, 4000);
-      }
+      if (i < full.length) { timeoutId = setTimeout(typeChar, 130); }
+      else { timeoutId = setTimeout(deleteChar, 4000); }
     };
-
     const deleteChar = () => {
       i--;
       setTypedPlaceholder(full.slice(0, i));
-      if (i > 0) {
-        timeoutId = setTimeout(deleteChar, 70);
-      } else {
-        // وەستان ٢ چرکە پێش دووبارە
-        timeoutId = setTimeout(typeChar, 2000);
-      }
+      if (i > 0) { timeoutId = setTimeout(deleteChar, 70); }
+      else { timeoutId = setTimeout(typeChar, 2000); }
     };
-
     timeoutId = setTimeout(typeChar, 800);
     return () => clearTimeout(timeoutId);
   }, [t.placeholder]);
@@ -676,28 +660,22 @@ export default function App() {
     const list = result.formats || result.downloads || result.downloadLinks || result.videoLinks || result.medias;
     if (list && Array.isArray(list)) {
       if (type === 'video') {
-        // Priority 1: explicit type === 'video' (Instagram/Facebook API)
         let video = list.find(item => String(item.type || '').toLowerCase() === 'video');
-        // Priority 2: TikTok no-watermark
         if (!video) video = list.find(item => {
           const label = String(item.text || item.label || item.quality || item.type || '').toLowerCase();
           return label === 'video_nwm' || label.includes('no_watermark') || label.includes('nwm');
         });
-        // Priority 3: HD
         if (!video) video = list.find(item => {
           const label = String(item.text || item.label || item.quality || item.type || '').toLowerCase();
           return label === 'video_hd' || label.includes('hd');
         });
-        // Priority 4: any video/mp4 label
         if (!video) video = list.find(item => {
           const label = String(item.text || item.label || item.quality || item.type || '').toLowerCase();
           const u     = String(item.url || '').toLowerCase();
           return (label.includes('video') || label.includes('mp4') || item.extension === 'mp4')
             && !u.includes('.m3u8') && !label.includes('audio') && !label.includes('mp3');
         });
-        // Priority 5: URL contains .mp4
         if (!video) video = list.find(item => item.url && String(item.url).includes('.mp4'));
-        // Priority 6: first non-audio non-image item
         if (!video && list.length > 0) {
           const first = list[0];
           const label = String(first.label || first.type || first.text || '').toLowerCase();
@@ -706,22 +684,18 @@ export default function App() {
         return video ? video.url : null;
       }
       if (type === 'audio') {
-        // پێشیاری: type یان text ی ڕاستەوخۆ === 'audio'/'mp3'/'music'
         let audio = list.find(item => {
           const t = String(item.type || item.text || "").toLowerCase();
           return t === 'audio' || t === 'mp3' || t === 'music';
         });
-        // fallback: هەر label یان URL کە audio/mp3 تێدابێت
         if (!audio) audio = list.find(item => {
           const label = String(item.text || item.label || item.type || item.extension || item.quality || "").toLowerCase();
           const u = String(item.url || "").toLowerCase();
-          return label.includes('mp3') || label.includes('audio') || label.includes('music')
-            || u.includes('.mp3');
+          return label.includes('mp3') || label.includes('audio') || label.includes('music') || u.includes('.mp3');
         });
         return audio ? audio.url : null;
       }
     }
-    // Array result (some APIs return array directly)
     if (Array.isArray(result)) {
       if (type === 'audio') {
         const a = result.find(x => x.type === 'audio' || x.type === 'mp3'
@@ -730,7 +704,6 @@ export default function App() {
       }
     }
     if (type === 'video') return result.videoUrl || result.download || result.video || result.url || null;
-    // audio fallback — check root-level fields
     if (type === 'audio') {
       return result.audioUrl || result.audio || result.mp3 || result.music
         || result.musicUrl || result.sound || result.soundUrl || null;
@@ -740,7 +713,6 @@ export default function App() {
 
   const getButtonConfig = () => {
     const videoLink = getDownloadLink('video');
-    // Check type from downloads list directly (Instagram sends type:'image')
     const videoItem = (() => {
       const list = result?.formats || result?.downloads || result?.downloadLinks || result?.videoLinks || result?.medias;
       if (list && Array.isArray(list)) return list.find(item => String(item.type || '').toLowerCase() === 'video');
@@ -793,10 +765,58 @@ export default function App() {
     if (outcome === 'accepted') setDeferredPrompt(null);
   };
 
+  /* ═══════════════════════════════════════════════
+     ✅ handleExtract — ئینستاگرام ڕاستەوخۆ داونلۆد
+        پلاتفۆرمی تر — JSON وەک پێشوو
+  ═══════════════════════════════════════════════ */
   const handleExtract = async () => {
     if (!url)      return showNotify(t.errUrl, "error");
     if (!selected) return showNotify(t.errPlatform, "error");
-    setIsLoading(true); setResult(null);
+
+    setIsLoading(true);
+    setResult(null);
+
+    // ── ئینستاگرام: ڕاستەوخۆ فایل داونلۆد ──
+    if (selected === 'instagram') {
+      try {
+        const response = await fetch('/api/instagram/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || err.details || 'داونلۆد شکست');
+        }
+
+        // ناوی فایل لە header
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const nameMatch   = disposition.match(/filename="?([^"]+)"?/);
+        const filename    = nameMatch ? nameMatch[1] : `instagram_${Date.now()}.mp4`;
+
+        const blob   = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a      = document.createElement('a');
+        a.href       = blobUrl;
+        a.download   = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+
+        // history زیادبکە
+        addToHistory({ title: 'Instagram Content', author: 'Instagram User', thumbnail: '' });
+
+      } catch (error) {
+        showNotify(`ERROR: ${error.message.substring(0, 100)}`, "error", true);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // ── پلاتفۆرمی تر: JSON وەک پێشوو ──
     try {
       const response = await axios.post(endpoint, { url });
       setResult(response.data);
@@ -856,28 +876,17 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           style={{ textAlign: 'center', marginBottom: 36, width: '100%', maxWidth: 680 }}
         >
-          {/* Top bar */}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'nowrap', overflowX: 'auto', padding: '0 4px' }}>
             <span className="badge-online">
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#48bb78', display: 'inline-block' }} />
               {t.systemOk}
             </span>
-
-            {/* Lang toggle */}
-            <button
-              onClick={() => setLang(l => l === 'ku' ? 'en' : 'ku')}
-              className="neu-btn"
-              style={{ padding: '6px 14px', fontSize: 11, fontWeight: 800, color: '#ff6b35', borderRadius: 30 }}
-            >
+            <button onClick={() => setLang(l => l === 'ku' ? 'en' : 'ku')} className="neu-btn"
+              style={{ padding: '6px 14px', fontSize: 11, fontWeight: 800, color: '#ff6b35', borderRadius: 30 }}>
               {t.langBtn}
             </button>
-
-            {/* ── Dark / Light toggle ── */}
-            <button
-              className="neu-btn"
-              onClick={() => setDark(d => !d)}
-              style={{ padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, fontWeight: 800, color: dark ? '#a0b0cc' : '#ff6b35', borderRadius: 30 }}
-            >
+            <button className="neu-btn" onClick={() => setDark(d => !d)}
+              style={{ padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, fontWeight: 800, color: dark ? '#a0b0cc' : '#ff6b35', borderRadius: 30 }}>
               <AnimatePresence mode="wait" initial={false}>
                 {dark ? (
                   <motion.span key="moon" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }} style={{ display: 'flex' }}>
@@ -893,41 +902,26 @@ export default function App() {
             </button>
           </div>
 
-          {/* ── Logo (floats + image spins on hover) ── */}
           <div className="neu logo-wrap" style={{ display: 'inline-flex', alignItems: 'center', gap: 16, padding: '18px 36px', marginBottom: 16, borderRadius: 28 }}>
-            <img
-              src="/logo.png"
-              alt="logo"
-              className="logo-img"
+            <img src="/logo.png" alt="logo" className="logo-img"
               style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-              onError={e => { e.target.style.display = 'none'; }}
-            />
+              onError={e => { e.target.style.display = 'none'; }} />
             <h1 className="logo-title">Save<sup>+</sup></h1>
           </div>
-
           <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.02em', color: 'var(--text-sub)', marginTop: 12 }}>
             {t.subtitle}
           </p>
         </motion.header>
 
         {/* ── PLATFORM GRID ── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          style={{ width: '100%', maxWidth: 760, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, marginBottom: 28 }}
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+          style={{ width: '100%', maxWidth: 760, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, marginBottom: 28 }}>
           {platforms.map((p, i) => (
-            <motion.button
-              key={p.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              whileTap={{ scale: 0.96 }}
+            <motion.button key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }} whileTap={{ scale: 0.96 }}
               onClick={() => { setSelected(s => s === p.id ? null : p.id); setResult(null); }}
               className={`neu-sm platform-btn ${selected === p.id ? 'active' : ''}`}
-              style={selected === p.id ? { background: p.color, color: '#fff', boxShadow: `4px 4px 12px ${p.color}55, -2px -2px 8px rgba(255,255,255,0.1)` } : {}}
-            >
+              style={selected === p.id ? { background: p.color, color: '#fff', boxShadow: `4px 4px 12px ${p.color}55, -2px -2px 8px rgba(255,255,255,0.1)` } : {}}>
               <span style={{ color: selected === p.id ? '#fff' : p.color, display: 'flex' }}>
                 {React.cloneElement(p.icon, { size: 16 })}
               </span>
@@ -943,12 +937,8 @@ export default function App() {
         )}
 
         {/* ── INPUT AREA ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}>
           <div className="neu" style={{ padding: 20, borderRadius: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-sub)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -959,50 +949,33 @@ export default function App() {
                 {isLoading ? `> ${logs[logIndex]}` : t.ready}
               </span>
             </div>
-
-            {/* ── URL input row ── */}
             <div className="neu-inset" style={{ display: 'flex', alignItems: 'center', padding: '0 10px', gap: 6, height: 50, marginBottom: 12 }}>
-              <input
-                className="neu-input"
-                type="text"
-                value={url}
+              <input className="neu-input" type="text" value={url}
                 onChange={e => setUrl(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleExtract()}
                 placeholder={url ? '' : typedPlaceholder}
-                style={{ height: 50, flex: 1, minWidth: 0, fontSize: 13 }}
-              />
+                style={{ height: 50, flex: 1, minWidth: 0, fontSize: 13 }} />
               {url && (
-                <button
-                  onClick={() => setUrl('')}
-                  className="neu-btn"
-                  title={t.clearUrl}
-                  style={{ padding: '5px 7px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
-                >
+                <button onClick={() => setUrl('')} className="neu-btn" title={t.clearUrl}
+                  style={{ padding: '5px 7px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}>
                   <X size={13} color="#e53e3e" />
                 </button>
               )}
               <div style={{ width: 1, height: 22, background: 'var(--shadow-d)', flexShrink: 0, opacity: 0.5 }} />
-              <button onClick={handlePaste} className="neu-btn" title={t.paste} style={{ padding: '7px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: 'var(--text-sub)' }}>
+              <button onClick={handlePaste} className="neu-btn" title={t.paste}
+                style={{ padding: '7px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: 'var(--text-sub)' }}>
                 <Clipboard size={15} color="var(--text-sub)" />
                 <span style={{ fontSize: 10 }}>{t.paste}</span>
               </button>
             </div>
-
-            {/* ── Extract button full width ── */}
-            <div
-              className={`extract-btn-wrap ${isLoading ? 'loading' : ''}`}
-              style={{ '--c1': activeColor, '--c2': activeColor + 'aa', '--c3': '#ffffff44', width: '100%' }}
-            >
-              <button
-                className={`extract-btn-inner ${isLoading ? 'loading' : ''}`}
-                onClick={handleExtract}
-                disabled={isLoading}
-                style={{ color: activeColor, width: '100%', justifyContent: 'center', height: 46 }}
-              >
+            <div className={`extract-btn-wrap ${isLoading ? 'loading' : ''}`}
+              style={{ '--c1': activeColor, '--c2': activeColor + 'aa', '--c3': '#ffffff44', width: '100%' }}>
+              <button className={`extract-btn-inner ${isLoading ? 'loading' : ''}`}
+                onClick={handleExtract} disabled={isLoading}
+                style={{ color: activeColor, width: '100%', justifyContent: 'center', height: 46 }}>
                 {isLoading
                   ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite', color: activeColor }} />
-                  : <Zap size={15} color={activeColor} />
-                }
+                  : <Zap size={15} color={activeColor} />}
                 {isLoading ? t.processing : t.extract}
               </button>
             </div>
@@ -1012,8 +985,7 @@ export default function App() {
         {/* ── SKELETON while loading ── */}
         {isLoading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
-          >
+            style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}>
             <div className="neu" style={{ padding: 20, borderRadius: 24 }}>
               <div style={{ display: 'flex', gap: 16 }}>
                 <div className="skeleton" style={{ width: 120, height: 120, flexShrink: 0 }} />
@@ -1028,15 +1000,12 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* ── RESULT ── */}
+        {/* ── RESULT (تەنها بۆ پلاتفۆرمی تر، نەک ئینستاگرام) ── */}
         <AnimatePresence mode="wait">
           {result && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
-            >
+              style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}>
               <div className="neu" style={{ padding: 20, borderRadius: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#48bb78' }}>
                   <CheckCircle size={14} /> {t.extracted}
@@ -1049,18 +1018,15 @@ export default function App() {
                   )}
                   <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
                     <div>
-                      {/* Title — try multiple possible field names */}
                       <h3 style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)', marginBottom: 6, lineHeight: 1.5 }}>
                         {result.title || result.caption || result.description || result.videoTitle || result.name || result.text || t.noTitle}
                       </h3>
-                      {/* Author */}
                       {(result.author || result.uploader || result.channel || result.username || result.creator || result.nickname) && (
                         <p style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: activeColor, display: 'inline-block', flexShrink: 0 }} />
                           {result.author || result.uploader || result.channel || result.username || result.creator || result.nickname}
                         </p>
                       )}
-                      {/* Duration + views row */}
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
                         {(result.duration || result.duration_string) && (
                           <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-sub)', background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -1075,7 +1041,6 @@ export default function App() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {/* Video button + Copy + Share */}
                       {primaryLink ? (
                         <div style={{ display: 'flex', gap: 8 }}>
                           <a href={primaryLink} target="_blank" rel="noreferrer" className="dl-video-btn" style={{ flex: 1 }}>
@@ -1097,7 +1062,6 @@ export default function App() {
                           {btnConfig.icon} {btnConfig.noData}
                         </button>
                       )}
-                      {/* TikTok: image + audio row */}
                       {(showImageButton || (showAudioButton && getDownloadLink('audio'))) && (
                         <div style={{ display: 'grid', gridTemplateColumns: showImageButton && (showAudioButton && getDownloadLink('audio')) ? '1fr 1fr' : '1fr', gap: 8 }}>
                           {showImageButton && imageLink && (
@@ -1123,10 +1087,8 @@ export default function App() {
         {/* ── HISTORY ── */}
         <AnimatePresence>
           {history.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingInline: 4 }}>
                 <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-sub)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Clock size={12} /> {t.history}
@@ -1138,8 +1100,7 @@ export default function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {history.map((item, idx) => (
                   <motion.div key={idx} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-                    className="neu-sm" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}
-                  >
+                    className="neu-sm" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div className="neu-btn" style={{ padding: 8 }}>
                       <Activity size={14} color="var(--primary)" />
                     </div>
@@ -1163,19 +1124,13 @@ export default function App() {
           <p style={{ fontSize: 9, color: 'var(--text-sub)', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 14 }}>
             {t.footer2} <sup style={{ color: '#ff6b35', fontSize: '0.7em' }}>+</sup>
           </p>
-
         </footer>
 
       </div>
 
       {/* ── WhatsApp FAB ── */}
-      <a
-        href="https://wa.me/9647511060708"
-        target="_blank"
-        rel="noreferrer"
-        className="wa-fab"
-        style={{ opacity: showFab ? 1 : 0, visibility: showFab ? 'visible' : 'hidden', transform: showFab ? 'scale(1)' : 'scale(0.7)' }}
-      >
+      <a href="https://wa.me/9647511060708" target="_blank" rel="noreferrer" className="wa-fab"
+        style={{ opacity: showFab ? 1 : 0, visibility: showFab ? 'visible' : 'hidden', transform: showFab ? 'scale(1)' : 'scale(0.7)' }}>
         <div className="wa-fab-tooltip">
           {lang === 'ku' ? 'فیدباک بنێرە' : 'Send Feedback'}
         </div>
