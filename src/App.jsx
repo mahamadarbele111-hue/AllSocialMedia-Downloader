@@ -295,6 +295,54 @@ const softStyles = `
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--shadow-d); border-radius: 10px; }
+
+  /* ── Conic Extract Button ── */
+  .extract-btn-wrap {
+    position: relative;
+    border-radius: 16px;
+    padding: 2px;
+    flex-shrink: 0;
+    background: conic-gradient(from var(--angle, 0deg), var(--c1, #ff6b35), var(--c2, #ff0050), var(--c3, #ff6b35), var(--c1, #ff6b35));
+    animation: conicSpin 2.5s linear infinite;
+  }
+  .extract-btn-wrap.loading {
+    animation: conicSpin 0.8s linear infinite;
+  }
+  @property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+  @keyframes conicSpin {
+    to { --angle: 360deg; }
+  }
+  .extract-btn-inner {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 42px;
+    padding: 0 20px;
+    background: var(--card);
+    border: none;
+    border-radius: 14px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, color 0.2s, transform 0.07s;
+    position: relative;
+    overflow: hidden;
+  }
+  .extract-btn-inner:active {
+    transform: scale(0.96) translateY(1px);
+  }
+  .extract-btn-inner.loading {
+    opacity: 0.75;
+    cursor: not-allowed;
+  }
 `;
 
 /* ═══════════════════════════════════════════════
@@ -328,6 +376,7 @@ const i18n = {
     footer1: '© 2026 ARBILI. All rights reserved.', footer2: 'Powered by Save',
     selectPlatform: 'Select a platform to get started',
     darkMode: 'Dark', lightMode: 'Light',
+    clearUrl: 'Clear',
   },
   ku: {
     dir: 'rtl', langBtn: 'English', systemOk: 'سیستەم کار دەکات',
@@ -343,6 +392,7 @@ const i18n = {
     footer1: '© ٢٠٢٦ ئەربیلی. هەموو مافەکان پارێزراون.', footer2: 'کارپێکراوی Save',
     selectPlatform: 'پلاتفۆرمێک هەڵبژێرە بۆ دەستپێکردن',
     darkMode: 'تاریک', lightMode: 'ڕوناک',
+    clearUrl: 'سڕینەوە',
   }
 };
 
@@ -628,26 +678,35 @@ export default function App() {
                   <Clipboard size={16} color="var(--text-sub)" />
                   <span style={{ fontSize: 10 }}>{t.paste}</span>
                 </button>
+                {url && (
+                  <button
+                    onClick={() => setUrl('')}
+                    className="neu-btn"
+                    title={t.clearUrl}
+                    style={{ padding: '6px 8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e53e3e', borderRadius: 10 }}
+                  >
+                    <X size={14} color="#e53e3e" />
+                  </button>
+                )}
               </div>
 
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={handleExtract}
-                disabled={isLoading}
-                style={{
-                  height: 48, padding: '0 24px',
-                  background: `linear-gradient(135deg, ${activeColor}, #ff8c5a)`,
-                  border: 'none', borderRadius: 14, color: '#fff',
-                  fontFamily: 'Nunito, sans-serif', fontSize: 12, fontWeight: 900,
-                  letterSpacing: '0.05em', cursor: isLoading ? 'not-allowed' : 'pointer',
-                  opacity: isLoading ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: 8,
-                  boxShadow: `4px 4px 14px ${activeColor}55, -3px -3px 8px rgba(255,255,255,0.1)`,
-                  whiteSpace: 'nowrap', flexShrink: 0,
-                }}
+              <div
+                className={`extract-btn-wrap ${isLoading ? 'loading' : ''}`}
+                style={{ '--c1': activeColor, '--c2': activeColor + 'aa', '--c3': '#ffffff44' }}
               >
-                {isLoading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={16} />}
-                {isLoading ? t.processing : t.extract}
-              </motion.button>
+                <button
+                  className={`extract-btn-inner ${isLoading ? 'loading' : ''}`}
+                  onClick={handleExtract}
+                  disabled={isLoading}
+                  style={{ color: activeColor }}
+                >
+                  {isLoading
+                    ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite', color: activeColor }} />
+                    : <Zap size={15} color={activeColor} />
+                  }
+                  {isLoading ? t.processing : t.extract}
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
