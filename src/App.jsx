@@ -4,7 +4,7 @@ import {
   Instagram, Youtube, Ghost, Twitter,
   Facebook, Clipboard, CheckCircle, Loader2, FileVideo, 
   FileAudio, Clock, Trash2, Activity, ImageIcon, 
-  AlertTriangle, X, Zap, Download, Sun, Moon
+  AlertTriangle, X, Zap, Download, Sun, Moon, Copy, Share2, RefreshCw, Wifi, WifiOff
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -249,6 +249,53 @@ const softStyles = `
     box-shadow: 6px 6px 16px var(--shadow-d), -6px -6px 16px var(--shadow-l);
   }
 
+  /* ── Skeleton Loading ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--shadow-d) 25%, var(--shadow-l) 50%, var(--shadow-d) 75%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.4s ease infinite;
+    border-radius: 10px;
+  }
+  @keyframes skeletonShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ── PWA install banner ── */
+  .pwa-banner {
+    background: var(--card);
+    box-shadow: 4px 4px 10px var(--shadow-d), -4px -4px 10px var(--shadow-l);
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-sub);
+  }
+
+  /* ── Offline banner ── */
+  .offline-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #e53e3e;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .online-bar {
+    background: #48bb78;
+  }
+
   /* ── Theme Toggle ── */
   .theme-toggle {
     width: 54px;
@@ -387,6 +434,7 @@ const i18n = {
     clearUrl: 'Clear',
     dlImage: 'DOWNLOAD IMAGE',
     dlAudio2: 'DOWNLOAD AUDIO',
+    copyLink: 'COPY', share: 'SHARE', retry: 'RETRY', copied: 'COPIED!', offline: 'No Internet', online: 'Back Online',
     noTitle: 'No title available',
     duration: 'Duration',
     views: 'Views',
@@ -408,6 +456,7 @@ const i18n = {
     clearUrl: 'سڕینەوە',
     dlImage: 'وێنە داگرە',
     dlAudio2: 'دەنگ داگرە',
+    copyLink: 'کۆپی', share: 'بەشداری', retry: 'دووبارە', copied: 'کۆپی کرا!', offline: 'ئینتەرنێت نییە', online: 'پەیوەندی گەڕایەوە',
     noTitle: 'ناونیشان نەدۆزرایەوە',
     duration: 'ماوە',
     views: 'بینراوەکان',
@@ -428,6 +477,10 @@ export default function App() {
   const [lang,         setLang]         = useState('ku');
   const [dark,         setDark]         = useState(true);
   const [typedPlaceholder, setTypedPlaceholder] = useState('');
+  const [copied,       setCopied]       = useState(null);   // which url was copied
+  const [isOnline,     setIsOnline]     = useState(true);
+  const [onlineBanner, setOnlineBanner] = useState(null);   // null | 'offline' | 'online'
+  const [deferredPrompt, setDeferredPrompt] = useState(null); // PWA install
 
   const t    = i18n[lang];
   const logs = loadingLogs[lang];
@@ -440,6 +493,39 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   }, [dark]);
+
+  // ── LocalStorage: save & restore theme + lang ──
+  useEffect(() => {
+    const savedDark = localStorage.getItem('arbili_dark');
+    const savedLang = localStorage.getItem('arbili_lang');
+    if (savedDark !== null) setDark(savedDark === 'true');
+    if (savedLang)          setLang(savedLang);
+  }, []);
+  useEffect(() => { localStorage.setItem('arbili_dark', dark); }, [dark]);
+  useEffect(() => { localStorage.setItem('arbili_lang', lang); }, [lang]);
+
+  // ── Online / Offline detection ──
+  useEffect(() => {
+    const goOffline = () => { setIsOnline(false); setOnlineBanner('offline'); };
+    const goOnline  = () => {
+      setIsOnline(true);
+      setOnlineBanner('online');
+      setTimeout(() => setOnlineBanner(null), 3000);
+    };
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online',  goOnline);
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online',  goOnline);
+    };
+  }, []);
+
+  // ── PWA install prompt ──
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   // ── Typing animation for placeholder ──
   useEffect(() => {
@@ -490,9 +576,9 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isLoading, logs]);
 
-  const showNotify = (message, type = 'error') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 5000);
+  const showNotify = (message, type = 'error', showRetry = false) => {
+    setNotification({ message, type, showRetry });
+    setTimeout(() => setNotification(null), 6000);
   };
 
   const handlePaste = async () => {
@@ -600,6 +686,29 @@ export default function App() {
   const showAudioButton = selected !== 'instagram';
   const showImageButton = selected === 'tiktok';
 
+  const handleCopy = async (url, id) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {}
+  };
+
+  const handleShare = async (url, title) => {
+    if (navigator.share) {
+      try { await navigator.share({ title: title || 'Save+', url }); } catch {}
+    } else {
+      handleCopy(url, 'share');
+    }
+  };
+
+  const handlePWAInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') setDeferredPrompt(null);
+  };
+
   const handleExtract = async () => {
     if (!url)      return showNotify(t.errUrl, "error");
     if (!selected) return showNotify(t.errPlatform, "error");
@@ -617,7 +726,7 @@ export default function App() {
       } else if (error.message) {
         msg = error.message;
       }
-      showNotify(`ERROR: ${msg.substring(0, 100)}`, "error");
+      showNotify(`ERROR: ${msg.substring(0, 100)}`, "error", true);
     } finally {
       setIsLoading(false);
     }
@@ -642,9 +751,16 @@ export default function App() {
               <div className="neu" style={{ padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 12, borderLeft: `4px solid ${notification.type === 'error' ? '#e53e3e' : '#ff6b35'}` }}>
                 <AlertTriangle size={18} color={notification.type === 'error' ? '#e53e3e' : '#ff6b35'} style={{ flexShrink: 0, marginTop: 2 }} />
                 <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{notification.message}</p>
-                <button onClick={() => setNotification(null)} className="neu-btn" style={{ padding: 6 }}>
-                  <X size={14} />
-                </button>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  {notification.showRetry && (
+                    <button onClick={() => { setNotification(null); handleExtract(); }} className="neu-btn" style={{ padding: '6px 10px', fontSize: 10, fontWeight: 800, color: '#ff6b35', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <RefreshCw size={12} /> {t.retry}
+                    </button>
+                  )}
+                  <button onClick={() => setNotification(null)} className="neu-btn" style={{ padding: 6 }}>
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
@@ -809,6 +925,25 @@ export default function App() {
           </div>
         </motion.div>
 
+        {/* ── SKELETON while loading ── */}
+        {isLoading && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
+          >
+            <div className="neu" style={{ padding: 20, borderRadius: 24 }}>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <div className="skeleton" style={{ width: 120, height: 120, flexShrink: 0 }} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div className="skeleton" style={{ height: 16, width: '80%' }} />
+                  <div className="skeleton" style={{ height: 12, width: '50%' }} />
+                  <div className="skeleton" style={{ height: 12, width: '35%' }} />
+                  <div className="skeleton" style={{ height: 44, width: '100%', marginTop: 8 }} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* ── RESULT ── */}
         <AnimatePresence mode="wait">
           {result && (
@@ -856,11 +991,23 @@ export default function App() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {/* Video button */}
+                      {/* Video button + Copy + Share */}
                       {primaryLink ? (
-                        <a href={primaryLink} target="_blank" rel="noreferrer" className="dl-video-btn">
-                          <Download size={14} /> {btnConfig.label}
-                        </a>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <a href={primaryLink} target="_blank" rel="noreferrer" className="dl-video-btn" style={{ flex: 1 }}>
+                            <Download size={14} /> {btnConfig.label}
+                          </a>
+                          <button onClick={() => handleCopy(primaryLink, 'video')} className="neu-btn" title={t.copyLink}
+                            style={{ padding: '0 12px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: copied === 'video' ? '#48bb78' : activeColor, flexShrink: 0, height: '100%', minHeight: 46 }}>
+                            {copied === 'video' ? <CheckCircle size={14} /> : <Copy size={14} />}
+                          </button>
+                          {typeof navigator !== 'undefined' && navigator.share && (
+                            <button onClick={() => handleShare(primaryLink, result?.title)} className="neu-btn" title={t.share}
+                              style={{ padding: '0 12px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: activeColor, flexShrink: 0, height: '100%', minHeight: 46 }}>
+                              <Share2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <button disabled className="dl-video-btn" style={{ opacity: 0.4, cursor: 'not-allowed' }}>
                           {btnConfig.icon} {btnConfig.noData}
