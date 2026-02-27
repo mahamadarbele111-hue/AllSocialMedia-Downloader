@@ -255,12 +255,12 @@ const softStyles = `
    DATA
 ═══════════════════════════════════════════════ */
 const platforms = [
-  { id: 'tiktok',    name: 'TikTok',    icon: <Music />,     color: '#ff0050' },
-  { id: 'youtube',   name: 'YouTube',   icon: <Youtube />,   color: '#FF0000' },
-  { id: 'instagram', name: 'Instagram', icon: <Instagram />, color: '#E1306C' },
-  { id: 'facebook',  name: 'Facebook',  icon: <Facebook />,  color: '#1877F2' },
-  { id: 'twitter',   name: 'Twitter/X', icon: <Twitter />,   color: '#1DA1F2' },
-  { id: 'snapchat',  name: 'Snapchat',  icon: <Ghost />,     color: '#f5a623' },
+  { id: 'tiktok',    name: 'TikTok',    name_ku: 'تیکتۆک',     icon: <Music />,     color: '#ff0050' },
+  { id: 'youtube',   name: 'YouTube',   name_ku: 'یوتیوب',       icon: <Youtube />,   color: '#FF0000' },
+  { id: 'instagram', name: 'Instagram', name_ku: 'ئینستاگرام',   icon: <Instagram />, color: '#E1306C' },
+  { id: 'facebook',  name: 'Facebook',  name_ku: 'فەیسبووک',     icon: <Facebook />,  color: '#1877F2' },
+  { id: 'twitter',   name: 'Twitter/X', name_ku: 'تویتەر',       icon: <Twitter />,   color: '#1DA1F2' },
+  { id: 'snapchat',  name: 'Snapchat',  name_ku: 'سناپچات',      icon: <Ghost />,     color: '#f5a623' },
 ];
 
 const loadingLogs = {
@@ -281,6 +281,7 @@ const i18n = {
     errClip: 'Clipboard access denied', errServer: 'Failed to connect to server.',
     footer1: '© 2026 ARBILI. All rights reserved.', footer2: 'Powered by Save',
     selectPlatform: 'Select a platform to get started',
+    darkMode: 'Dark', lightMode: 'Light',
   },
   ku: {
     dir: 'rtl', langBtn: 'English', systemOk: 'سیستەم کار دەکات',
@@ -295,6 +296,7 @@ const i18n = {
     errClip: 'مەترسی: دەسترسی کلیپبۆرد نەدرا', errServer: 'پەیوەندی بە سێرڤەر سەرنەکەوت.',
     footer1: '© ٢٠٢٦ ئەربیلی. هەموو مافەکان پارێزراون.', footer2: 'کارپێکراوی Save',
     selectPlatform: 'پلاتفۆرمێک هەڵبژێرە بۆ دەستپێکردن',
+    darkMode: 'تاریک', lightMode: 'ڕوناک',
   }
 };
 
@@ -478,26 +480,23 @@ export default function App() {
             </button>
 
             {/* ── Dark / Light toggle ── */}
-            <button className="theme-toggle" onClick={() => setDark(d => !d)}>
-              <div className={`toggle-thumb ${dark ? 'on' : ''}`}>
-                <AnimatePresence mode="wait" initial={false}>
-                  {dark ? (
-                    <motion.span key="moon"
-                      initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}
-                    >
-                      <Moon size={12} color="#fff" />
-                    </motion.span>
-                  ) : (
-                    <motion.span key="sun"
-                      initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}
-                    >
-                      <Sun size={12} color="#fff" />
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
+            <button
+              className="neu-btn"
+              onClick={() => setDark(d => !d)}
+              style={{ padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, fontWeight: 800, color: dark ? '#a0b0cc' : '#ff6b35', borderRadius: 30 }}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {dark ? (
+                  <motion.span key="moon" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }} style={{ display: 'flex' }}>
+                    <Moon size={14} />
+                  </motion.span>
+                ) : (
+                  <motion.span key="sun" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }} style={{ display: 'flex' }}>
+                    <Sun size={14} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              <span>{dark ? t.darkMode : t.lightMode}</span>
             </button>
           </div>
 
@@ -539,7 +538,7 @@ export default function App() {
               <span style={{ color: selected === p.id ? '#fff' : p.color, display: 'flex' }}>
                 {React.cloneElement(p.icon, { size: 16 })}
               </span>
-              <span style={{ fontSize: 10, fontWeight: 800 }}>{p.name}</span>
+              <span style={{ fontSize: 10, fontWeight: 800 }}>{lang === 'ku' ? p.name_ku : p.name}</span>
             </motion.button>
           ))}
         </motion.div>
