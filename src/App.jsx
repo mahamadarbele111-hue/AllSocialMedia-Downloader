@@ -379,6 +379,9 @@ const i18n = {
     clearUrl: 'Clear',
     dlImage: 'DOWNLOAD IMAGE',
     dlAudio2: 'DOWNLOAD AUDIO',
+    noTitle: 'No title available',
+    duration: 'Duration',
+    views: 'Views',
   },
   ku: {
     dir: 'rtl', langBtn: 'English', systemOk: 'سیستەم کار دەکات',
@@ -397,6 +400,9 @@ const i18n = {
     clearUrl: 'سڕینەوە',
     dlImage: 'وێنە داگرە',
     dlAudio2: 'دەنگ داگرە',
+    noTitle: 'ناونیشان نەدۆزرایەوە',
+    duration: 'ماوە',
+    views: 'بینراوەکان',
   }
 };
 
@@ -751,8 +757,30 @@ export default function App() {
                   )}
                   <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
                     <div>
-                      <h3 style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{result.title}</h3>
-                      {result.author && <p style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 700 }}>{t.by} {result.author}</p>}
+                      {/* Title — try multiple possible field names */}
+                      <h3 style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)', marginBottom: 6, lineHeight: 1.5 }}>
+                        {result.title || result.caption || result.description || result.videoTitle || result.name || result.text || t.noTitle}
+                      </h3>
+                      {/* Author */}
+                      {(result.author || result.uploader || result.channel || result.username || result.creator || result.nickname) && (
+                        <p style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: activeColor, display: 'inline-block', flexShrink: 0 }} />
+                          {result.author || result.uploader || result.channel || result.username || result.creator || result.nickname}
+                        </p>
+                      )}
+                      {/* Duration + views row */}
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
+                        {(result.duration || result.duration_string) && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-sub)', background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            ⏱ {result.duration_string || result.duration}
+                          </span>
+                        )}
+                        {(result.view_count || result.views || result.playCount) && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-sub)', background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            👁 {Number(result.view_count || result.views || result.playCount).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {/* Video button */}
