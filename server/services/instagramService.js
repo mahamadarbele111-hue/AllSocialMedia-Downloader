@@ -1,7 +1,6 @@
 const axios = require("axios");
 
 async function fetchInstagram(url) {
-  // 1. Validasi URL Basic
   if (!url || typeof url !== "string") {
     throw new Error("Link Instagram harus diisi");
   }
@@ -10,69 +9,89 @@ async function fetchInstagram(url) {
   }
 
   try {
-    console.log("[IG] Menggunakan Puruboy API untuk:", url);
+    console.log("[IG] Fetching:", url);
 
-    // 2. Request ke API Puruboy menggunakan metode POST
     const { data } = await axios.post(
       "https://puruboy-api.vercel.app/api/downloader/instagram",
-      { url: url },
+      { url },
       {
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
-        timeout: 15000 // Batas waktu 15 detik
+        timeout: 15000
       }
     );
 
-    // 3. Cek Error dari API
     if (!data.success || !data.result || !data.result.medias || data.result.medias.length === 0) {
-      throw new Error("API tidak menemukan media (Mungkin akun Private atau link salah).");
+      throw new Error("API tidak menemukan media (akun Private atau link salah).");
     }
 
     const result = data.result;
-    const downloadLinks = [];
+    const downloads = [];
 
-    // 4. Parsing Data Array medias dari Puruboy
     result.medias.forEach(mediaItem => {
-      // Periksa apakah format mp4 atau jpg untuk melabeli tombol
-      const isVideo = mediaItem.format === 'mp4' || mediaItem.url.includes('.mp4');
-      
-      // Khusus Puruboy IG API: Jangan tampilkan opsi yang tidak ada suaranya (mute: "yes") jika itu video
-      // Tapi jika itu gambar (jpg), biarkan saja.
+      const isVideo = mediaItem.format === 'mp4'
+        || String(mediaItem.url || '').includes('.mp4')
+        || String(mediaItem.type || '').toLowerCase() === 'video';
+
+      // ── بەرێوەچوونی ڤیدیۆ بەبێ دەنگ ──
+      // ئەگەر ڤیدیۆی mute بوو بەڵام تر هیچ ڤیدیۆی تر نییە، زیادی بکە
+      // ئەگەر ڤیدیۆی دەنگدار هەیە ئەوکات mute skip بکە
       if (isVideo && mediaItem.mute === "yes") {
-          return; // Skip iterasi ini
+        const hasNonMutedVideo = result.medias.some(m => {
+          const iv = m.format === 'mp4' || String(m.url || '').includes('.mp4');
+          return iv && m.mute !== "yes";
+        });
+        if (hasNonMutedVideo) return; // skip muted if better exists
       }
 
-      downloadLinks.push({
-        url: mediaItem.url,
-        type: isVideo ? 'video' : 'image',
-        label: isVideo ? `DOWNLOAD VIDEO (${mediaItem.quality})` : `DOWNLOAD IMAGE (${mediaItem.quality})`,
-        extension: mediaItem.format || (isVideo ? 'mp4' : 'jpg')
+      downloads.push({
+        url:       mediaItem.url,
+        type:      isVideo ? 'video' : 'image',
+        text:      isVideo ? 'video' : 'image',   // ← frontend type detection
+        label:     isVideo
+          ? `ڤیدیۆ (${mediaItem.quality || 'HD'})`
+          : `وێنە (${mediaItem.quality || 'Original'})`,
+        extension: mediaItem.format || (isVideo ? 'mp4' : 'jpg'),
+        quality:   mediaItem.quality || null,
       });
     });
 
-    if (downloadLinks.length === 0) {
-       throw new Error("Link download valid tidak ditemukan.");
+    // ── مطمئن ببە لانیکەم یەک دانە هەیە ──
+    if (downloads.length === 0) {
+      // fallback: هەموویان زیادبکە بەبێ skip
+      result.medias.forEach(mediaItem => {
+        const isVideo = mediaItem.format === 'mp4' || String(mediaItem.url || '').includes('.mp4');
+        downloads.push({
+          url:       mediaItem.url,
+          type:      isVideo ? 'video' : 'image',
+          text:      isVideo ? 'video' : 'image',
+          label:     isVideo ? 'ڤیدیۆ' : 'وێنە',
+          extension: mediaItem.format || (isVideo ? 'mp4' : 'jpg'),
+        });
+      });
     }
 
-    // --- UPDATE THUMBNAIL ---
-    // Menggunakan thumbnail dari API jika ada, jika tidak gunakan logo default
-    const thumbnailUrl = result.thumbnail || "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/2048px-Instagram_logo_2016.svg.png";
+    if (downloads.length === 0) {
+      throw new Error("هیچ لینکی داونلۆدی دۆزرایەوە.");
+    }
 
-    // 5. Return Format Zeronaut
+    const thumbnailUrl = result.thumbnail
+      || "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/2048px-Instagram_logo_2016.svg.png";
+
     return {
-      title: result.title || "Instagram Content",
-      author: data.author || "Instagram User", 
-      thumbnail: thumbnailUrl, 
-      medias: downloadLinks
+      title:     result.title    || "Instagram Content",
+      author:    data.author     || result.author || "Instagram User",
+      thumbnail: thumbnailUrl,
+      downloads: downloads,   // ← frontend دەگەڕێت بەدوای 'downloads' دا
     };
 
   } catch (error) {
     const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
-    console.error("[IG Service Error]:", errorMsg);
-    throw new Error("Gagal mengambil data dari server. Pastikan link valid dan bukan dari akun private.");
+    console.error("[IG Error]:", errorMsg);
+    throw new Error("Gagal mengambil data. Pastikan link valid dan bukan akun private.");
   }
 }
 
