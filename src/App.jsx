@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Music, Instagram, Youtube, Ghost, Twitter,
-  Facebook, Linkedin, Cloud, Video, Mic2, Image, Radio, 
-  Layers, Scissors, Clipboard, CheckCircle, Loader2, FileVideo, 
+  Facebook, Clipboard, CheckCircle, Loader2, FileVideo, 
   FileAudio, Clock, Trash2, Activity, ImageIcon, 
   AlertTriangle, X, Zap, Download
 } from 'lucide-react';
@@ -167,21 +166,6 @@ const softStyles = `
   }
   .dl-audio-btn:hover { transform: translateY(-1px); }
 
-  /* ── Stats card ── */
-  .stat-value {
-    font-size: 1.6rem;
-    font-weight: 900;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-  }
-  .stat-label {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-sub);
-  }
-
   /* ── Badge ── */
   .badge-online {
     display: inline-flex;
@@ -215,22 +199,12 @@ const softStyles = `
    DATA
 ═══════════════════════════════════════════════ */
 const platforms = [
-  { id: 'tiktok',      name: 'TikTok',      icon: <Music />,    color: '#ff0050' },
-  { id: 'instagram',   name: 'Instagram',   icon: <Instagram />,color: '#E1306C' },
-  { id: 'youtube',     name: 'YouTube',     icon: <Youtube />,  color: '#FF0000' },
-  { id: 'snapchat',    name: 'Snapchat',    icon: <Ghost />,    color: '#f5a623' },
-  { id: 'twitter',     name: 'Twitter/X',   icon: <Twitter />,  color: '#1DA1F2' },
-  { id: 'facebook',    name: 'Facebook',    icon: <Facebook />, color: '#1877F2' },
-  { id: 'spotify',     name: 'Spotify',     icon: <Radio />,    color: '#1DB954' },
-  { id: 'soundcloud',  name: 'SoundCloud',  icon: <Mic2 />,     color: '#FF5500' },
-  { id: 'linkedin',    name: 'LinkedIn',    icon: <Linkedin />, color: '#0077B5' },
-  { id: 'pinterest',   name: 'Pinterest',   icon: <Image />,    color: '#BD081C' },
-  { id: 'tumblr',      name: 'Tumblr',      icon: <Layers />,   color: '#36465D' },
-  { id: 'douyin',      name: 'Douyin',      icon: <Music />,    color: '#ff6b35' },
-  { id: 'kuaishou',    name: 'Kuaishou',    icon: <Video />,    color: '#FF7F24' },
-  { id: 'capcut',      name: 'CapCut',      icon: <Scissors />, color: '#555' },
-  { id: 'dailymotion', name: 'Dailymotion', icon: <Video />,    color: '#0066DC' },
-  { id: 'bluesky',     name: 'Bluesky',     icon: <Cloud />,    color: '#0085FF' },
+  { id: 'tiktok',    name: 'TikTok',    icon: <Music />,     color: '#ff0050' },
+  { id: 'youtube',   name: 'YouTube',   icon: <Youtube />,   color: '#FF0000' },
+  { id: 'instagram', name: 'Instagram', icon: <Instagram />, color: '#E1306C' },
+  { id: 'facebook',  name: 'Facebook',  icon: <Facebook />,  color: '#1877F2' },
+  { id: 'twitter',   name: 'Twitter/X', icon: <Twitter />,   color: '#1DA1F2' },
+  { id: 'snapchat',  name: 'Snapchat',  icon: <Ghost />,     color: '#f5a623' },
 ];
 
 const loadingLogs = {
@@ -266,11 +240,9 @@ const i18n = {
     dlVideo: 'DOWNLOAD VIDEO',
     dlImage: 'DOWNLOAD IMAGE',
     dlReel: 'DOWNLOAD REEL',
-    dlTrack: 'DOWNLOAD TRACK',
     dlAudio: 'MP3',
     noVideo: 'NO VIDEO',
     noImage: 'NO IMAGE',
-    noTrack: 'NO TRACK',
     noPost: 'NO POST',
     noAudio: 'NO AUDIO',
     by: 'By',
@@ -278,8 +250,6 @@ const i18n = {
     clear: 'CLEAR',
     paste: 'Paste',
     openLink: 'OPEN',
-    alertTitle: 'SYSTEM ALERT',
-    notifTitle: 'NOTIFICATION',
     errUrl: 'Please insert URL first!',
     errPlatform: 'Please select a platform first!',
     errClip: 'Clipboard access denied',
@@ -287,7 +257,6 @@ const i18n = {
     footer1: '© 2026 ARBILI. All rights reserved.',
     footer2: 'Powered by Save',
     selectPlatform: 'Select a platform to get started',
-    hdQuality: 'HD Quality',
   },
   ku: {
     dir: 'rtl',
@@ -304,11 +273,9 @@ const i18n = {
     dlVideo: 'ڤیدیۆ داگرە',
     dlImage: 'وێنە داگرە',
     dlReel: 'ریل داگرە',
-    dlTrack: 'گۆرانی داگرە',
     dlAudio: 'MP3 داگرە',
     noVideo: 'ڤیدیۆ نەدۆزرایەوە',
     noImage: 'وێنە نەدۆزرایەوە',
-    noTrack: 'گۆرانی نەدۆزرایەوە',
     noPost: 'پۆست نەدۆزرایەوە',
     noAudio: 'دەنگ نەدۆزرایەوە',
     by: 'لەلایەن',
@@ -316,8 +283,6 @@ const i18n = {
     clear: 'سڕینەوە',
     paste: 'پەیست',
     openLink: 'کردنەوە',
-    alertTitle: 'ئاگادارکردنەوە',
-    notifTitle: 'ئاگاداری',
     errUrl: 'تکایە لینکەکە دابنێ!',
     errPlatform: 'تکایە پلاتفۆرمێک هەڵبژێرە!',
     errClip: 'مەترسی: دەسترسی کلیپبۆرد نەدرا',
@@ -325,7 +290,6 @@ const i18n = {
     footer1: '© ٢٠٢٦ ئەربیلی. هەموو مافەکان پارێزراون.',
     footer2: 'کارپێکراوی Save',
     selectPlatform: 'پلاتفۆرمێک هەڵبژێرە بۆ دەستپێکردن',
-    hdQuality: 'کوالیتی HD',
   }
 };
 
@@ -342,7 +306,7 @@ export default function App() {
   const [notification, setNotification] = useState(null);
   const [lang,         setLang]         = useState('ku');
 
-  const t  = i18n[lang];
+  const t    = i18n[lang];
   const logs = loadingLogs[lang];
 
   const activePlatform = selected ? platforms.find(p => p.id === selected) : null;
@@ -351,7 +315,7 @@ export default function App() {
   const endpoint       = selected ? `/api/${selected}` : '';
 
   useEffect(() => {
-    document.documentElement.dir = t.dir;
+    document.documentElement.dir  = t.dir;
     document.documentElement.lang = lang;
   }, [lang, t.dir]);
 
@@ -426,18 +390,14 @@ export default function App() {
     const videoLink = getDownloadLink('video');
     const isImage   = videoLink && /\.(jpg|webp|png)/i.test(String(videoLink));
     switch (selected) {
-      case 'pinterest':   return { label: t.dlImage, icon: <ImageIcon size={14} />,  noData: t.noImage };
-      case 'spotify':     return { label: t.dlTrack, icon: <Music size={14} />,      noData: t.noTrack };
-      case 'soundcloud':  return { label: t.dlTrack, icon: <Music size={14} />,      noData: t.noTrack };
-      case 'instagram':   return { label: isImage ? t.dlImage : t.dlReel, icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, noData: t.noPost };
-      default:            return { label: t.dlVideo, icon: <FileVideo size={14} />,  noData: t.noVideo };
+      case 'instagram': return { label: isImage ? t.dlImage : t.dlReel, icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, noData: t.noPost };
+      default:          return { label: t.dlVideo, icon: <FileVideo size={14} />, noData: t.noVideo };
     }
   };
 
   const btnConfig       = getButtonConfig();
-  const isAudioPlatform = ['spotify','soundcloud'].includes(selected);
-  const primaryLink     = isAudioPlatform ? getDownloadLink('audio') : getDownloadLink('video');
-  const showAudioButton = !isAudioPlatform && !['instagram','pinterest'].includes(selected);
+  const primaryLink     = getDownloadLink('video');
+  const showAudioButton = !['instagram'].includes(selected);
 
   const handleExtract = async () => {
     if (!url)      return showNotify(t.errUrl, "error");
@@ -465,7 +425,6 @@ export default function App() {
   /* ── RENDER ── */
   return (
     <>
-      {/* inject CSS */}
       <style dangerouslySetInnerHTML={{ __html: softStyles }} />
 
       <div style={{ minHeight: '100vh', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg)' }}>
@@ -496,7 +455,6 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           style={{ textAlign: 'center', marginBottom: 36, width: '100%', maxWidth: 680 }}
         >
-          {/* Online badge + lang toggle */}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginBottom: 20 }}>
             <span className="badge-online">
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#48bb78', display: 'inline-block' }} />
@@ -511,14 +469,10 @@ export default function App() {
             </button>
           </div>
 
-          {/* Logo */}
           <div className="neu" style={{ display: 'inline-block', padding: '18px 36px', marginBottom: 16, borderRadius: 28 }}>
-            <h1 className="logo-title">
-              Save<sup>+</sup>
-            </h1>
+            <h1 className="logo-title">Save<sup>+</sup></h1>
           </div>
 
-          {/* Subtitle */}
           <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--text-sub)', marginTop: 12 }}>
             — &nbsp; {t.subtitle} &nbsp; —
           </p>
@@ -536,7 +490,7 @@ export default function App() {
               key={p.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
+              transition={{ delay: i * 0.05 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => { setSelected(p.id); setResult(null); }}
               className={`neu-sm platform-btn ${selected === p.id ? 'active' : ''}`}
@@ -550,7 +504,6 @@ export default function App() {
           ))}
         </motion.div>
 
-        {/* hint */}
         {!selected && (
           <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', marginBottom: 12, opacity: 0.7 }}>
             ↑ {t.selectPlatform}
@@ -565,7 +518,6 @@ export default function App() {
           style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
         >
           <div className="neu" style={{ padding: 20, borderRadius: 24 }}>
-            {/* Status bar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-sub)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: activeColor, display: 'inline-block' }} />
@@ -576,7 +528,6 @@ export default function App() {
               </span>
             </div>
 
-            {/* Input row */}
             <div style={{ display: 'flex', gap: 10 }}>
               <div className="neu-inset" style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10 }}>
                 <input
@@ -585,7 +536,7 @@ export default function App() {
                   value={url}
                   onChange={e => setUrl(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleExtract()}
-                  placeholder={`${t.placeholder}`}
+                  placeholder={t.placeholder}
                   style={{ height: 48 }}
                 />
                 <button onClick={handlePaste} className="neu-btn" title={t.paste} style={{ padding: '8px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: 'var(--text-sub)' }}>
@@ -636,21 +587,18 @@ export default function App() {
               style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
             >
               <div className="neu" style={{ padding: 20, borderRadius: 24 }}>
-                {/* success header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#48bb78' }}>
                   <CheckCircle size={14} />
                   {t.extracted}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
-                  {/* Thumbnail */}
                   {result.thumbnail && (
                     <div className="thumb-wrap" style={{ width: 120, height: 120, flexShrink: 0 }}>
                       <img src={result.thumbnail} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   )}
 
-                  {/* Info + buttons */}
                   <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
                     <div>
                       <h3 style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{result.title}</h3>
@@ -735,8 +683,7 @@ export default function App() {
 
       </div>
 
-      {/* spin keyframe */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </>
   );
 }
