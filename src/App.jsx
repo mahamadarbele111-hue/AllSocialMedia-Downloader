@@ -1,43 +1,237 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Music, Instagram, Youtube, Ghost, Twitter, Terminal, 
+  Music, Instagram, Youtube, Ghost, Twitter,
   Facebook, Linkedin, Cloud, Video, Mic2, Image, Radio, 
-  Layers, Hash, Scissors, Clipboard, CheckCircle, Loader2, FileVideo, 
+  Layers, Scissors, Clipboard, CheckCircle, Loader2, FileVideo, 
   FileAudio, Clock, Trash2, Activity, ImageIcon, 
-  AlertTriangle, X, Zap, Users, BarChart3
+  AlertTriangle, X, Zap, Users, BarChart3, Download
 } from 'lucide-react';
 import axios from 'axios';
 
-// --- DATABASE PLATFORM ---
+/* ═══════════════════════════════════════════════
+   SOFT UI GLOBAL STYLES
+═══════════════════════════════════════════════ */
+const softStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #e8edf2;
+    --card:     #e8edf2;
+    --shadow-l: #ffffff;
+    --shadow-d: #c5cdd8;
+    --primary:  #ff6b35;
+    --primary2: #ff8c5a;
+    --text:     #4a5568;
+    --text-sub: #8896a5;
+    --white:    #ffffff;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'Nunito', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Neumorphism helpers ── */
+  .neu {
+    background: var(--card);
+    box-shadow: 8px 8px 18px var(--shadow-d), -8px -8px 18px var(--shadow-l);
+    border-radius: 20px;
+  }
+  .neu-sm {
+    background: var(--card);
+    box-shadow: 4px 4px 10px var(--shadow-d), -4px -4px 10px var(--shadow-l);
+    border-radius: 14px;
+  }
+  .neu-inset {
+    background: var(--card);
+    box-shadow: inset 5px 5px 12px var(--shadow-d), inset -5px -5px 12px var(--shadow-l);
+    border-radius: 14px;
+  }
+  .neu-btn {
+    background: var(--card);
+    box-shadow: 5px 5px 12px var(--shadow-d), -5px -5px 12px var(--shadow-l);
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: var(--text);
+  }
+  .neu-btn:hover {
+    box-shadow: 3px 3px 8px var(--shadow-d), -3px -3px 8px var(--shadow-l);
+  }
+  .neu-btn:active {
+    box-shadow: inset 3px 3px 8px var(--shadow-d), inset -3px -3px 8px var(--shadow-l);
+  }
+
+  /* ── Logo ── */
+  .logo-title {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .logo-title sup {
+    font-size: 1.2rem;
+    color: var(--primary);
+    font-weight: 900;
+    vertical-align: super;
+    margin-left: 2px;
+  }
+
+  /* ── Platform grid ── */
+  .platform-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .platform-btn.active {
+    color: var(--white);
+    box-shadow: inset 3px 3px 8px rgba(0,0,0,0.15), inset -2px -2px 5px rgba(255,255,255,0.1);
+  }
+  .platform-btn:hover:not(.active) {
+    color: var(--text);
+  }
+
+  /* ── Input ── */
+  .neu-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    width: 100%;
+  }
+  .neu-input::placeholder { color: var(--text-sub); }
+
+  /* ── Download buttons ── */
+  .dl-video-btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary2));
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 5px 5px 15px rgba(255,107,53,0.35), -3px -3px 8px rgba(255,255,255,0.6);
+    transition: all 0.2s ease;
+    text-decoration: none;
+    width: 100%;
+  }
+  .dl-video-btn:hover {
+    box-shadow: 3px 3px 10px rgba(255,107,53,0.45), -2px -2px 6px rgba(255,255,255,0.7);
+    transform: translateY(-1px);
+  }
+  .dl-audio-btn {
+    background: var(--card);
+    color: var(--primary);
+    border: none;
+    border-radius: 14px;
+    padding: 14px 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 5px 5px 12px var(--shadow-d), -5px -5px 12px var(--shadow-l);
+    transition: all 0.2s ease;
+    text-decoration: none;
+    width: 100%;
+  }
+  .dl-audio-btn:hover { transform: translateY(-1px); }
+
+  /* ── Stats card ── */
+  .stat-value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+  }
+
+  /* ── Badge ── */
+  .badge-online {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card);
+    box-shadow: 4px 4px 10px var(--shadow-d), -4px -4px 10px var(--shadow-l);
+    border-radius: 30px;
+    padding: 6px 14px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+  }
+
+  /* ── Thumbnail ── */
+  .thumb-wrap {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 6px 6px 16px var(--shadow-d), -6px -6px 16px var(--shadow-l);
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--shadow-d); border-radius: 10px; }
+`;
+
+/* ═══════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════ */
 const platforms = [
-  { id: 'tiktok', name: 'TikTok', icon: <Music />, color: '#ff0050' },
-  { id: 'instagram', name: 'Instagram', icon: <Instagram />, color: '#E1306C' },
-  { id: 'youtube', name: 'YouTube', icon: <Youtube />, color: '#FF0000' },
-  { id: 'snapchat', name: 'Snapchat', icon: <Ghost />, color: '#FFFC00' },
-  { id: 'twitter', name: 'Twitter/X', icon: <Twitter />, color: '#1DA1F2' },
-  { id: 'facebook', name: 'Facebook', icon: <Facebook />, color: '#1877F2' },
-  { id: 'spotify', name: 'Spotify', icon: <Radio />, color: '#1DB954' },
-  { id: 'soundcloud', name: 'SoundCloud', icon: <Mic2 />, color: '#FF5500' },
-  { id: 'linkedin', name: 'LinkedIn', icon: <Linkedin />, color: '#0077B5' },
-  { id: 'pinterest', name: 'Pinterest', icon: <Image />, color: '#BD081C' },
-  { id: 'tumblr', name: 'Tumblr', icon: <Layers />, color: '#36465D' },
-  { id: 'douyin', name: 'Douyin', icon: <Music />, color: '#ffffff' }, 
-  { id: 'kuaishou', name: 'Kuaishou', icon: <Video />, color: '#FF7F24' },
-  { id: 'capcut', name: 'CapCut', icon: <Scissors />, color: '#ffffff' },
-  { id: 'dailymotion', name: 'Dailymotion', icon: <Video />, color: '#0066DC' },
-  { id: 'bluesky', name: 'Bluesky', icon: <Cloud />, color: '#0085FF' },
+  { id: 'tiktok',      name: 'TikTok',      icon: <Music />,    color: '#ff0050' },
+  { id: 'instagram',   name: 'Instagram',   icon: <Instagram />,color: '#E1306C' },
+  { id: 'youtube',     name: 'YouTube',     icon: <Youtube />,  color: '#FF0000' },
+  { id: 'snapchat',    name: 'Snapchat',    icon: <Ghost />,    color: '#f5a623' },
+  { id: 'twitter',     name: 'Twitter/X',   icon: <Twitter />,  color: '#1DA1F2' },
+  { id: 'facebook',    name: 'Facebook',    icon: <Facebook />, color: '#1877F2' },
+  { id: 'spotify',     name: 'Spotify',     icon: <Radio />,    color: '#1DB954' },
+  { id: 'soundcloud',  name: 'SoundCloud',  icon: <Mic2 />,     color: '#FF5500' },
+  { id: 'linkedin',    name: 'LinkedIn',    icon: <Linkedin />, color: '#0077B5' },
+  { id: 'pinterest',   name: 'Pinterest',   icon: <Image />,    color: '#BD081C' },
+  { id: 'tumblr',      name: 'Tumblr',      icon: <Layers />,   color: '#36465D' },
+  { id: 'douyin',      name: 'Douyin',      icon: <Music />,    color: '#ff6b35' },
+  { id: 'kuaishou',    name: 'Kuaishou',    icon: <Video />,    color: '#FF7F24' },
+  { id: 'capcut',      name: 'CapCut',      icon: <Scissors />, color: '#555' },
+  { id: 'dailymotion', name: 'Dailymotion', icon: <Video />,    color: '#0066DC' },
+  { id: 'bluesky',     name: 'Bluesky',     icon: <Cloud />,    color: '#0085FF' },
 ];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.03 } }
-};
-
-const itemVariants = {
-  hidden: { y: 10, opacity: 0 },
-  visible: { y: 0, opacity: 1 }
-};
 
 const loadingLogs = [
   "Handshake initialized...",
@@ -48,31 +242,32 @@ const loadingLogs = [
 ];
 
 const INITIAL_VISITORS = 14205;
-const INITIAL_LINKS = 45902;
+const INITIAL_LINKS    = 45902;
 
+/* ═══════════════════════════════════════════════
+   COMPONENT
+═══════════════════════════════════════════════ */
 export default function App() {
-  const [selected, setSelected] = useState(null);
-  const [url, setUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [logIndex, setLogIndex] = useState(0);
-  const [history, setHistory] = useState([]);
+  const [selected,     setSelected]     = useState(null);
+  const [url,          setUrl]          = useState("");
+  const [isLoading,    setIsLoading]    = useState(false);
+  const [result,       setResult]       = useState(null);
+  const [logIndex,     setLogIndex]     = useState(0);
+  const [history,      setHistory]      = useState([]);
   const [notification, setNotification] = useState(null);
-  const [stats, setStats] = useState({ visitors: INITIAL_VISITORS, links: INITIAL_LINKS });
+  const [stats,        setStats]        = useState({ visitors: INITIAL_VISITORS, links: INITIAL_LINKS });
 
-  const activeColor = selected ? platforms.find(p => p.id === selected).color : '#ff6b35';
-  const activeName = selected ? platforms.find(p => p.id === selected).name : 'Universal';
-
-  // --- REWRITE API ENDPOINT ---
-  // Gunakan relative path agar otomatis ikut domain Vercel (Backend Serverless)
-  const endpoint = selected ? `/api/${selected}` : '';
+  const activePlatform = selected ? platforms.find(p => p.id === selected) : null;
+  const activeColor    = activePlatform?.color || '#ff6b35';
+  const activeName     = activePlatform?.name  || 'Universal';
+  const endpoint       = selected ? `/api/${selected}` : '';
 
   useEffect(() => {
     let interval;
     if (isLoading) {
       setLogIndex(0);
       interval = setInterval(() => {
-        setLogIndex((prev) => (prev < loadingLogs.length - 1 ? prev + 1 : prev));
+        setLogIndex(prev => prev < loadingLogs.length - 1 ? prev + 1 : prev);
       }, 800);
     }
     return () => clearInterval(interval);
@@ -80,431 +275,397 @@ export default function App() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStats(prev => ({
-        ...prev,
-        visitors: prev.visitors + Math.floor(Math.random() * 3)
-      }));
+      setStats(prev => ({ ...prev, visitors: prev.visitors + Math.floor(Math.random() * 3) }));
     }, 4000);
     return () => clearInterval(interval);
   }, []);
 
   const showNotify = (message, type = 'error') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), 5000); // 5 Detik biar sempat baca
+    setTimeout(() => setNotification(null), 5000);
   };
 
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       setUrl(text);
-    } catch (err) {
+    } catch {
       showNotify("Clipboard access denied", "error");
     }
   };
 
-  const addToHistory = (data) => {
-    setHistory(prev => [data, ...prev].slice(0, 3));
-  };
-
+  const addToHistory = (data) => setHistory(prev => [data, ...prev].slice(0, 3));
   const clearHistory = () => setHistory([]);
 
-  // --- LOGIKA UTAMA PENCARI LINK (SAFE PARSING) ---
   const getDownloadLink = (type) => {
     if (!result) return null;
-
     if (Array.isArray(result)) {
-       if (type === 'video') {
-          const vid = result.find(x => x.type === 'video' || x.type === 'mp4');
-          return vid ? vid.url : (result[0]?.url || null);
-       }
-       return null; 
+      if (type === 'video') {
+        const vid = result.find(x => x.type === 'video' || x.type === 'mp4');
+        return vid ? vid.url : (result[0]?.url || null);
+      }
+      return null;
     }
-
     const list = result.formats || result.downloads || result.videoLinks || result.medias || result.downloadLinks;
-    
     if (list && Array.isArray(list)) {
       if (type === 'video') {
         let video = list.find(item => {
-           const label = String(item.text || item.label || item.quality || "").toLowerCase();
-           const url = String(item.url || "").toLowerCase();
-           const isVideo = label.includes('video') || label.includes('mp4') || item.extension === 'mp4' || item.type === 'video';
-           const isNotStream = !url.includes('.m3u8');
-           return isVideo && isNotStream;
+          const label = String(item.text || item.label || item.quality || "").toLowerCase();
+          const u     = String(item.url || "").toLowerCase();
+          return (label.includes('video') || label.includes('mp4') || item.extension === 'mp4') && !u.includes('.m3u8');
         });
-        
-        if (!video) {
-            video = list.find(item => item.url && String(item.url).includes('.mp4'));
-        }
+        if (!video) video = list.find(item => item.url && String(item.url).includes('.mp4'));
         if (!video && list.length > 0) {
-           const first = list[0];
-           const label = String(first.label || first.type || "").toLowerCase();
-           if (!label.includes('profile') && !label.includes('audio')) video = first;
+          const first = list[0];
+          const label = String(first.label || first.type || "").toLowerCase();
+          if (!label.includes('profile') && !label.includes('audio')) video = first;
         }
         return video ? video.url : null;
-      } 
-      else if (type === 'audio') {
+      }
+      if (type === 'audio') {
         const audio = list.find(item => {
-           const label = String(item.text || item.label || item.type || item.extension || "").toLowerCase();
-           return label.includes('mp3') || label.includes('audio') || label.includes('music');
+          const label = String(item.text || item.label || item.type || item.extension || "").toLowerCase();
+          return label.includes('mp3') || label.includes('audio') || label.includes('music');
         });
         return audio ? audio.url : null;
       }
     }
-    
     if (type === 'video') {
-       if (result.videoUrl) return result.videoUrl;         
-       if (result.download) return result.download;         
-       if (result.video) return result.video;               
-       if (result.url) return result.url;                   
+      return result.videoUrl || result.download || result.video || result.url || null;
     }
     return null;
   };
 
   const getButtonConfig = () => {
     const videoLink = getDownloadLink('video');
-    const isImage = videoLink && (String(videoLink).includes('.jpg') || String(videoLink).includes('.webp') || String(videoLink).includes('.png'));
-
+    const isImage   = videoLink && /\.(jpg|webp|png)/i.test(String(videoLink));
     switch (selected) {
-        case 'pinterest': return { label: 'DOWNLOAD IMAGE', icon: <ImageIcon size={14} />, noData: 'NO IMAGE' };
-        case 'spotify': return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />, noData: 'NO TRACK' };
-        case 'soundcloud': return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />, noData: 'NO TRACK' };
-        case 'instagram': 
-            return { 
-                label: isImage ? 'DOWNLOAD IMAGE' : 'DOWNLOAD REEL', 
-                icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, 
-                noData: 'NO POST' 
-            };
-        default: return { label: 'DOWNLOAD VIDEO', icon: <FileVideo size={14} />, noData: 'NO VIDEO' };
+      case 'pinterest':   return { label: 'DOWNLOAD IMAGE', icon: <ImageIcon size={14} />,  noData: 'NO IMAGE' };
+      case 'spotify':     return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />,      noData: 'NO TRACK' };
+      case 'soundcloud':  return { label: 'DOWNLOAD TRACK', icon: <Music size={14} />,      noData: 'NO TRACK' };
+      case 'instagram':   return { label: isImage ? 'DOWNLOAD IMAGE' : 'DOWNLOAD REEL', icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, noData: 'NO POST' };
+      default:            return { label: 'DOWNLOAD VIDEO', icon: <FileVideo size={14} />,  noData: 'NO VIDEO' };
     }
   };
 
-  const btnConfig = getButtonConfig();
-  const isAudioPlatform = ['spotify', 'soundcloud'].includes(selected);
-  const primaryLink = isAudioPlatform ? getDownloadLink('audio') : getDownloadLink('video');
-  const showAudioButton = !isAudioPlatform && !['instagram', 'pinterest'].includes(selected);
+  const btnConfig       = getButtonConfig();
+  const isAudioPlatform = ['spotify','soundcloud'].includes(selected);
+  const primaryLink     = isAudioPlatform ? getDownloadLink('audio') : getDownloadLink('video');
+  const showAudioButton = !isAudioPlatform && !['instagram','pinterest'].includes(selected);
 
   const handleExtract = async () => {
-    if (!url) return showNotify("Please insert URL first!", "error");
+    if (!url)      return showNotify("Please insert URL first!", "error");
     if (!selected) return showNotify("Please select a platform first!", "error");
-
-    setIsLoading(true);
-    setResult(null);
-
+    setIsLoading(true); setResult(null);
     try {
-      const response = await axios.post(endpoint, { url: url });
+      const response = await axios.post(endpoint, { url });
       setResult(response.data);
       addToHistory(response.data);
       setStats(prev => ({ ...prev, links: prev.links + 1 }));
     } catch (error) {
-      console.error("Extraction Error:", error);
-      
-      // --- SMART ERROR PARSING (V.6.1) ---
-      let msg = "Gagal menghubungi Server.";
-      
-      if (error.response && error.response.data) {
-          const data = error.response.data;
-          // Cek berbagai kemungkinan format error backend
-          msg = data.message || data.error || data.details || JSON.stringify(data);
-          
-          // Jika msg masih berupa object (misal: {status: 'error', ...}), paksa jadi string
-          if (typeof msg === 'object') {
-              msg = JSON.stringify(msg);
-          }
+      let msg = "Failed to connect to server.";
+      if (error.response?.data) {
+        const d = error.response.data;
+        msg = d.message || d.error || d.details || JSON.stringify(d);
+        if (typeof msg === 'object') msg = JSON.stringify(msg);
       } else if (error.message) {
-          msg = error.message;
+        msg = error.message;
       }
-      
       showNotify(`ERROR: ${msg.substring(0, 100)}`, "error");
     } finally {
       setIsLoading(false);
     }
   };
 
+  /* ── RENDER ── */
   return (
-    <div className="min-h-screen p-6 flex flex-col items-center justify-center font-sans overflow-x-hidden relative bg-[#050505]">
-      
-      {/* NOTIFIKASI */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ y: -100, opacity: 0, scale: 0.9 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: -100, opacity: 0, scale: 0.9 }}
-            className="fixed top-6 left-0 right-0 mx-auto w-[90%] max-w-md z-50 pointer-events-none"
-          >
-            <div className="bg-black/90 backdrop-blur-xl border border-l-4 rounded-r-lg shadow-[0_0_20px_rgba(0,0,0,0.5)] p-4 flex items-start gap-4 pointer-events-auto"
-                 style={{ borderColor: notification.type === 'error' ? '#ef4444' : '#ff6b35' }}>
-              <div className={`p-2 rounded-full bg-opacity-20 ${notification.type === 'error' ? 'bg-red-500 text-red-500' : 'bg-orange-500 text-orange-500'}`}>
-                <AlertTriangle size={20} />
-              </div>
-              <div className="flex-1">
-                <h4 className={`text-xs font-bold tracking-widest uppercase mb-1 ${notification.type === 'error' ? 'text-red-500' : 'text-orange-400'}`}>
-                  {notification.type === 'error' ? 'SYSTEM ALERT' : 'NOTIFICATION'}
-                </h4>
-                <p className="text-gray-300 text-xs font-mono leading-relaxed break-words">{notification.message}</p>
-              </div>
-              <button onClick={() => setNotification(null)} className="text-gray-500 hover:text-white transition-colors">
-                <X size={16} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <>
+      {/* inject CSS */}
+      <style dangerouslySetInnerHTML={{ __html: softStyles }} />
 
-      {/* HEADER */}
-      <header className="mb-10 text-center flex flex-col items-center w-full max-w-2xl mx-auto">
-        <div className="flex justify-center items-center gap-2 mb-6 px-3 py-1 rounded-full bg-white/5 border border-white/5">
-          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
-          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-            System Operational
-          </span>
-        </div>
-        
-        <motion.h1 
-          className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight mb-2 leading-tight bg-clip-text text-transparent bg-[length:200%_auto]"
-          animate={{
-            backgroundImage: [
-              "linear-gradient(to right, #ffffff, #ff6b35, #ffffff)",
-              "linear-gradient(to right, #ff6b35, #ffffff, #ff6b35)",
-              "linear-gradient(to right, #ffffff, #ff6b35, #ffffff)"
-            ]
-          }}
-          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-          style={{ backgroundImage: "linear-gradient(to right, #ffffff, #ff6b35, #ffffff)" }}
-        >
-          save<sup style={{ fontSize: '0.5em', verticalAlign: 'super' }}>+</sup>
-        </motion.h1>
-        
-        <div className="flex items-center gap-3 mb-8">
-           <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-orange-500/50"></div>
-           <h2 className="text-[10px] sm:text-xs font-medium tracking-[0.5em] text-orange-400/80 uppercase whitespace-nowrap">
-              ARBILI DOWNLOADER
-           </h2>
-           <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-orange-500/50"></div>
-        </div>
-      </header>
+      <div style={{ minHeight: '100vh', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg)' }}>
 
-      {/* PLATFORM GRID */}
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="w-full max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-10"
-      >
-        {platforms.map((p) => (
-          <motion.button
-            key={p.id}
-            variants={itemVariants}
-            onClick={() => { setSelected(p.id); setResult(null); }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className={`relative flex flex-row items-center justify-start gap-3 px-3 sm:px-4 py-3 sm:py-4 rounded-xl border border-white/5 bg-[#0a0a0c] hover:bg-[#121214] transition-all duration-300 group overflow-hidden ${
-              selected === p.id ? 'ring-1 ring-offset-1 ring-offset-black' : ''
-            }`}
-            style={{ borderColor: selected === p.id ? p.color : 'rgba(255,255,255,0.05)' }}
-          >
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500" style={{ background: `linear-gradient(to right, ${p.color}, transparent)` }} />
-            <div className="transition-transform duration-300 group-hover:scale-110 shrink-0" style={{ color: p.color }}>
-              {React.cloneElement(p.icon, { size: 18 })}
-            </div>
-            <span className="text-[10px] sm:text-xs font-bold tracking-wider text-gray-400 uppercase group-hover:text-white transition-colors truncate">
-              {p.name}
-            </span>
-            {selected === p.id && (
-              <motion.div layoutId="active-dot" className="absolute right-3 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.color, boxShadow: `0 0 10px ${p.color}` }} />
-            )}
-          </motion.button>
-        ))}
-      </motion.div>
-
-      {/* INPUT AREA */}
-      <motion.div layout className="w-full max-w-3xl mb-8 relative z-20">
-        <div className="bg-[#0a0a0c] border border-white/10 p-1 rounded-2xl shadow-2xl transition-colors duration-500" style={{ borderColor: activeColor }}>
-          <div className="bg-[#121214] rounded-xl p-4 sm:p-5 flex flex-col gap-3">
-            <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
-              <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: activeColor }} />
-                TARGET: <span style={{ color: activeColor }} className="font-bold uppercase">{activeName}</span>
-              </span>
-              {isLoading ? <span className="text-cyber animate-pulse">{">"} {loadingLogs[logIndex]}</span> : <span>READY</span>}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1 group">
-                <input 
-                  type="text"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder={`Paste ${activeName} Link here...`}
-                  className="w-full h-12 bg-black/40 border border-white/5 rounded-lg px-4 pr-10 text-white outline-none focus:border-white/20 transition-all placeholder:text-gray-600 font-mono text-xs"
-                />
-                <button onClick={handlePaste} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
-                  <Clipboard size={16} />
+        {/* ── NOTIFICATION ── */}
+        <AnimatePresence>
+          {notification && (
+            <motion.div
+              initial={{ y: -80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -80, opacity: 0 }}
+              style={{ position: 'fixed', top: 20, left: 0, right: 0, margin: '0 auto', width: '90%', maxWidth: 420, zIndex: 100 }}
+            >
+              <div className="neu" style={{ padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 12, borderLeft: `4px solid ${notification.type === 'error' ? '#e53e3e' : '#ff6b35'}` }}>
+                <AlertTriangle size={18} color={notification.type === 'error' ? '#e53e3e' : '#ff6b35'} style={{ flexShrink: 0, marginTop: 2 }} />
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{notification.message}</p>
+                <button onClick={() => setNotification(null)} className="neu-btn" style={{ padding: 6 }}>
+                  <X size={14} />
                 </button>
               </div>
-              <button 
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── HEADER ── */}
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ textAlign: 'center', marginBottom: 36, width: '100%', maxWidth: 680 }}
+        >
+          {/* Online badge */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <span className="badge-online">
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#48bb78', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+              System Operational
+            </span>
+          </div>
+
+          {/* Logo */}
+          <div className="neu" style={{ display: 'inline-block', padding: '18px 36px', marginBottom: 16, borderRadius: 28 }}>
+            <h1 className="logo-title">
+              Save<sup>+</sup>
+            </h1>
+          </div>
+
+          {/* Subtitle */}
+          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--text-sub)', marginTop: 12 }}>
+            — &nbsp; ARBILI DOWNLOADER &nbsp; —
+          </p>
+        </motion.header>
+
+        {/* ── PLATFORM GRID ── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          style={{ width: '100%', maxWidth: 760, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, marginBottom: 28 }}
+        >
+          {platforms.map((p, i) => (
+            <motion.button
+              key={p.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => { setSelected(p.id); setResult(null); }}
+              className={`neu-sm platform-btn ${selected === p.id ? 'active' : ''}`}
+              style={selected === p.id ? { background: p.color, color: '#fff', boxShadow: `4px 4px 12px ${p.color}55, -2px -2px 8px rgba(255,255,255,0.7)` } : {}}
+            >
+              <span style={{ color: selected === p.id ? '#fff' : p.color, display: 'flex' }}>
+                {React.cloneElement(p.icon, { size: 16 })}
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 800 }}>{p.name}</span>
+            </motion.button>
+          ))}
+        </motion.div>
+
+        {/* ── INPUT AREA ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
+        >
+          <div className="neu" style={{ padding: 20, borderRadius: 24 }}>
+            {/* Status bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-sub)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: activeColor, display: 'inline-block' }} />
+                TARGET: <span style={{ color: activeColor }}>{activeName}</span>
+              </span>
+              <span style={{ color: isLoading ? '#ff6b35' : 'var(--text-sub)' }}>
+                {isLoading ? `> ${loadingLogs[logIndex]}` : 'READY'}
+              </span>
+            </div>
+
+            {/* Input row */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div className="neu-inset" style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10 }}>
+                <input
+                  className="neu-input"
+                  type="text"
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleExtract()}
+                  placeholder={`Paste ${activeName} link here...`}
+                  style={{ height: 48 }}
+                />
+                <button onClick={handlePaste} className="neu-btn" style={{ padding: '8px 10px', flexShrink: 0 }}>
+                  <Clipboard size={16} color="var(--text-sub)" />
+                </button>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={handleExtract}
                 disabled={isLoading}
-                className="h-12 px-8 rounded-lg font-bold text-black text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 hover:brightness-110 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,0,0,0.3)]"
-                style={{ backgroundColor: activeColor }}
+                style={{
+                  height: 48,
+                  padding: '0 24px',
+                  background: `linear-gradient(135deg, ${activeColor}, #ff8c5a)`,
+                  border: 'none',
+                  borderRadius: 14,
+                  color: '#fff',
+                  fontFamily: 'Nunito, sans-serif',
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: '0.05em',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  boxShadow: `4px 4px 14px ${activeColor}55, -3px -3px 8px rgba(255,255,255,0.6)`,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
               >
-                {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} className="fill-black" />}
-                <span>{isLoading ? 'PROCESSING...' : 'EXTRACT'}</span>
-              </button>
+                {isLoading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Zap size={16} />}
+                {isLoading ? 'PROCESSING' : 'EXTRACT'}
+              </motion.button>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* RESULT CARD */}
-      <AnimatePresence mode="wait">
-        {result && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="w-full max-w-3xl mb-8"
-          >
-            <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl overflow-hidden">
-              <div className="bg-white/5 px-6 py-3 border-b border-white/5 flex justify-between items-center">
-                <div className="flex items-center gap-2 text-green-400 text-xs font-bold tracking-wider">
+        {/* ── RESULT ── */}
+        <AnimatePresence mode="wait">
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
+            >
+              <div className="neu" style={{ padding: 20, borderRadius: 24 }}>
+                {/* success header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#48bb78' }}>
                   <CheckCircle size={14} />
                   SUCCESSFULLY EXTRACTED
                 </div>
-                <div className="text-[10px] text-gray-500 font-mono">{result.date || 'Just now'}</div>
-              </div>
-              <div className="p-6 flex flex-col md:flex-row gap-6">
-                <div className="w-full md:w-1/3 aspect-video bg-black rounded-xl border border-white/5 relative overflow-hidden group shadow-lg">
-                  <img src={result.thumbnail} alt="Preview" className="w-full h-full object-cover opacity-80" />
-                  <div className="absolute bottom-2 left-2 text-[10px] text-white bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-white/10">{result.size || 'HD Quality'}</div>
-                </div>
-                <div className="flex-1 flex flex-col justify-between gap-4">
-                  <div>
-                    <h3 className="text-white font-bold text-lg mb-1 line-clamp-2 leading-snug">{result.title}</h3>
-                    <p className="text-gray-400 text-xs flex items-center gap-1"><Activity size={10}/> By {result.author}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {primaryLink ? (
-                      <a 
-                        href={primaryLink} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all border ${isAudioPlatform || !showAudioButton ? 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 text-blue-400 col-span-2' : 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 text-blue-400'}`}
-                      >
-                         {btnConfig.icon} {btnConfig.label}
-                      </a>
-                    ) : (
-                      <button disabled className={`flex items-center justify-center gap-2 bg-white/5 text-gray-500 py-3 rounded-xl text-xs font-bold cursor-not-allowed border border-white/5 ${isAudioPlatform || !showAudioButton ? 'col-span-2' : ''}`}>
-                        {btnConfig.icon} {btnConfig.noData}
-                      </button>
-                    )}
 
-                    {showAudioButton && (
-                      getDownloadLink('audio') ? (
-                        <a 
-                          href={getDownloadLink('audio')} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 border-green-500/30 text-green-400 py-3 rounded-xl text-xs font-bold transition-all"
-                        >
-                           <FileAudio size={14} /> DOWNLOAD MP3
+                <div style={{ display: 'flex', flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
+                  {/* Thumbnail */}
+                  {result.thumbnail && (
+                    <div className="thumb-wrap" style={{ width: 120, height: 120, flexShrink: 0 }}>
+                      <img src={result.thumbnail} alt="thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  )}
+
+                  {/* Info + buttons */}
+                  <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+                    <div>
+                      <h3 style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{result.title}</h3>
+                      {result.author && <p style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 700 }}>By {result.author}</p>}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: showAudioButton && getDownloadLink('audio') ? '1fr 1fr' : '1fr', gap: 10 }}>
+                      {primaryLink ? (
+                        <a href={primaryLink} target="_blank" rel="noreferrer" className="dl-video-btn">
+                          <Download size={14} /> {btnConfig.label}
                         </a>
                       ) : (
-                        <button disabled className="flex items-center justify-center gap-2 bg-white/5 text-gray-500 py-3 rounded-xl text-xs font-bold cursor-not-allowed border border-white/5">
-                          <FileAudio size={14} /> NO AUDIO
+                        <button disabled className="dl-video-btn" style={{ opacity: 0.4, cursor: 'not-allowed' }}>
+                          {btnConfig.icon} {btnConfig.noData}
                         </button>
-                      )
-                    )}
+                      )}
+
+                      {showAudioButton && getDownloadLink('audio') && (
+                        <a href={getDownloadLink('audio')} target="_blank" rel="noreferrer" className="dl-audio-btn">
+                          <FileAudio size={14} /> MP3
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* HISTORY */}
-      {history.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }}
-          className="w-full max-w-3xl mt-4"
-        >
-          <div className="flex items-center justify-between mb-3 px-2">
-            <div className="flex items-center gap-2 text-gray-500 text-[10px] font-bold tracking-widest uppercase">
-              <Clock size={12} /> Recent History
-            </div>
-            <button onClick={clearHistory} className="text-[10px] text-red-500/70 hover:text-red-500 flex items-center gap-1 transition-colors">
-              <Trash2 size={10} /> CLEAR ALL
-            </button>
-          </div>
-          <div className="space-y-2">
-            {history.map((item, idx) => (
-              <motion.div 
-                key={idx}
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="bg-[#0a0a0c] border border-white/5 rounded-lg p-3 flex items-center justify-between hover:border-white/10 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/5 rounded-md text-gray-400 group-hover:text-white transition-colors">
-                    <Activity size={14} />
-                  </div>
-                  <div className="overflow-hidden">
-                    <h4 className="text-gray-300 group-hover:text-white text-xs font-bold truncate max-w-[200px] transition-colors">{item.title}</h4>
-                    <p className="text-[10px] text-gray-600">{item.author}</p>
-                  </div>
-                </div>
-                <button className="text-gray-500 hover:text-orange-400 text-[10px] border border-transparent hover:border-orange-400/30 px-3 py-1.5 rounded transition-all bg-white/5">
-                  OPEN
+        {/* ── HISTORY ── */}
+        <AnimatePresence>
+          {history.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingInline: 4 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-sub)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Clock size={12} /> Recent History
+                </span>
+                <button onClick={clearHistory} className="neu-btn" style={{ padding: '5px 12px', fontSize: 10, fontWeight: 800, color: '#e53e3e', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Trash2 size={10} /> CLEAR
                 </button>
-              </motion.div>
-            ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {history.map((item, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    className="neu-sm"
+                    style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}
+                  >
+                    <div className="neu-btn" style={{ padding: 8 }}>
+                      <Activity size={14} color="var(--primary)" />
+                    </div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <p style={{ fontWeight: 800, fontSize: 12, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</p>
+                      {item.author && <p style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 600 }}>{item.author}</p>}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── STATS ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          style={{ width: '100%', maxWidth: 680, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 40 }}
+        >
+          {/* Live Users */}
+          <div className="neu" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 22 }}>
+            <div>
+              <p className="stat-label" style={{ marginBottom: 6, color: '#ff6b35' }}>Live Users</p>
+              <p className="stat-value">{stats.visitors.toLocaleString()}</p>
+            </div>
+            <div className="neu-btn" style={{ padding: 14, borderRadius: 16 }}>
+              <Users size={22} color="#ff6b35" />
+            </div>
+          </div>
+
+          {/* Processed */}
+          <div className="neu" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 22 }}>
+            <div>
+              <p className="stat-label" style={{ marginBottom: 6, color: '#48bb78' }}>Processed</p>
+              <p className="stat-value">{stats.links.toLocaleString()}</p>
+            </div>
+            <div className="neu-btn" style={{ padding: 14, borderRadius: 16 }}>
+              <BarChart3 size={22} color="#48bb78" />
+            </div>
           </div>
         </motion.div>
-      )}
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-3xl mt-12 grid grid-cols-2 gap-4"
-      >
-        <div className="bg-[#0a0a0c] border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-orange-500/20 transition-colors">
-           <div>
-              <div className="flex items-center gap-2 mb-1">
-                 <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
-                 <p className="text-[10px] font-bold tracking-widest text-orange-500/70 uppercase">Live Users</p>
-              </div>
-              <h3 className="text-2xl font-mono text-white font-bold">{stats.visitors.toLocaleString()}</h3>
-           </div>
-           <div className="p-3 bg-orange-500/10 rounded-xl text-orange-400 group-hover:scale-110 transition-transform">
-              <Users size={20} />
-           </div>
-        </div>
+        {/* ── FOOTER ── */}
+        <footer style={{ textAlign: 'center', paddingBottom: 24 }}>
+          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-sub)', marginBottom: 4 }}>
+            © 2026 <span style={{ color: '#ff6b35' }}>ARBILI</span>. All rights reserved.
+          </p>
+          <p style={{ fontSize: 9, color: 'var(--text-sub)', fontWeight: 600, letterSpacing: '0.1em' }}>
+            Powered by Save<sup style={{ color: '#ff6b35', fontSize: '0.7em' }}>+</sup>
+          </p>
+        </footer>
 
-        <div className="bg-[#0a0a0c] border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-green-500/20 transition-colors">
-           <div>
-              <div className="flex items-center gap-2 mb-1">
-                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                 <p className="text-[10px] font-bold tracking-widest text-green-500/70 uppercase">Processed</p>
-              </div>
-              <h3 className="text-2xl font-mono text-white font-bold">{stats.links.toLocaleString()}</h3>
-           </div>
-           <div className="p-3 bg-green-500/10 rounded-xl text-green-400 group-hover:scale-110 transition-transform">
-              <BarChart3 size={20} />
-           </div>
-        </div>
-      </motion.div>
+      </div>
 
-      
-
-      <footer className="mt-16 text-center opacity-30 hover:opacity-100 transition-opacity pb-8">
-        <p className="text-[10px] text-white font-mono tracking-[0.2em] mb-2">
-          © 2026 ARBILI. All rights reserved.
-        </p>
-        <div className="flex items-center justify-center gap-2 text-[9px] text-white">
-          <span>Powered by <span style={{ color: '#ff6b35' }}>ARBILI</span></span>
-        </div>
-      </footer>
-    </div>
+      {/* spin keyframe */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
+    </>
   );
 }
