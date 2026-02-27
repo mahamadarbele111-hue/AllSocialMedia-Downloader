@@ -485,25 +485,40 @@ export default function App() {
     const list = result.formats || result.downloads || result.videoLinks || result.medias || result.downloadLinks;
     if (list && Array.isArray(list)) {
       if (type === 'video') {
+        // TikTok API: prefer video_nwm (no watermark), then video_hd, then any video
         let video = list.find(item => {
-          const label = String(item.text || item.label || item.quality || "").toLowerCase();
+          const label = String(item.text || item.label || item.quality || item.type || "").toLowerCase();
+          return label === 'video_nwm' || label.includes('no_watermark') || label.includes('nowm') || label.includes('nwm');
+        });
+        if (!video) video = list.find(item => {
+          const label = String(item.text || item.label || item.quality || item.type || "").toLowerCase();
+          return label === 'video_hd' || label.includes('hd');
+        });
+        if (!video) video = list.find(item => {
+          const label = String(item.text || item.label || item.quality || item.type || "").toLowerCase();
           const u     = String(item.url || "").toLowerCase();
-          return (label.includes('video') || label.includes('mp4') || item.extension === 'mp4') && !u.includes('.m3u8');
+          return (label.includes('video') || label.includes('mp4') || item.extension === 'mp4') && !u.includes('.m3u8') && !label.includes('audio') && !label.includes('mp3');
         });
         if (!video) video = list.find(item => item.url && String(item.url).includes('.mp4'));
         if (!video && list.length > 0) {
           const first = list[0];
-          const label = String(first.label || first.type || "").toLowerCase();
-          if (!label.includes('profile') && !label.includes('audio')) video = first;
+          const label = String(first.label || first.type || first.text || "").toLowerCase();
+          if (!label.includes('profile') && !label.includes('audio') && !label.includes('mp3')) video = first;
         }
         return video ? video.url : null;
       }
       if (type === 'audio') {
-        const audio = list.find(item => {
+        // پێشیاری: type یان text ی ڕاستەوخۆ === 'audio'/'mp3'/'music'
+        let audio = list.find(item => {
+          const t = String(item.type || item.text || "").toLowerCase();
+          return t === 'audio' || t === 'mp3' || t === 'music';
+        });
+        // fallback: هەر label یان URL کە audio/mp3 تێدابێت
+        if (!audio) audio = list.find(item => {
           const label = String(item.text || item.label || item.type || item.extension || item.quality || "").toLowerCase();
           const u = String(item.url || "").toLowerCase();
           return label.includes('mp3') || label.includes('audio') || label.includes('music')
-            || u.includes('.mp3') || u.includes('audio') || u.includes('mp3');
+            || u.includes('.mp3');
         });
         return audio ? audio.url : null;
       }
