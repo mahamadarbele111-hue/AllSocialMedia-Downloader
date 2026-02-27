@@ -377,6 +377,8 @@ const i18n = {
     selectPlatform: 'Select a platform to get started',
     darkMode: 'Dark', lightMode: 'Light',
     clearUrl: 'Clear',
+    dlImage: 'DOWNLOAD IMAGE',
+    dlAudio2: 'DOWNLOAD AUDIO',
   },
   ku: {
     dir: 'rtl', langBtn: 'English', systemOk: 'سیستەم کار دەکات',
@@ -393,6 +395,8 @@ const i18n = {
     selectPlatform: 'پلاتفۆرمێک هەڵبژێرە بۆ دەستپێکردن',
     darkMode: 'تاریک', lightMode: 'ڕوناک',
     clearUrl: 'سڕینەوە',
+    dlImage: 'وێنە داگرە',
+    dlAudio2: 'دەنگ داگرە',
   }
 };
 
@@ -496,12 +500,27 @@ export default function App() {
     const videoLink = getDownloadLink('video');
     const isImage   = videoLink && /\.(jpg|webp|png)/i.test(String(videoLink));
     if (selected === 'instagram') return { label: isImage ? t.dlImage : t.dlReel, icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, noData: t.noPost };
+    if (selected === 'tiktok')    return { label: t.dlVideo, icon: <FileVideo size={14} />, noData: t.noVideo };
     return { label: t.dlVideo, icon: <FileVideo size={14} />, noData: t.noVideo };
   };
 
   const btnConfig       = getButtonConfig();
   const primaryLink     = getDownloadLink('video');
+  const imageLink       = (() => {
+    if (!result) return null;
+    const list = result.formats || result.downloads || result.medias || result.downloadLinks;
+    if (list && Array.isArray(list)) {
+      const img = list.find(item => {
+        const u = String(item.url || '').toLowerCase();
+        const l = String(item.label || item.type || item.extension || '').toLowerCase();
+        return l.includes('image') || l.includes('photo') || l.includes('cover') || /\.(jpg|jpeg|png|webp)/.test(u);
+      });
+      return img ? img.url : null;
+    }
+    return result?.cover || result?.image || result?.thumbnail || null;
+  })();
   const showAudioButton = selected !== 'instagram';
+  const showImageButton = selected === 'tiktok';
 
   const handleExtract = async () => {
     if (!url)      return showNotify(t.errUrl, "error");
@@ -735,7 +754,8 @@ export default function App() {
                       <h3 style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{result.title}</h3>
                       {result.author && <p style={{ fontSize: 11, color: 'var(--text-sub)', fontWeight: 700 }}>{t.by} {result.author}</p>}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: showAudioButton && getDownloadLink('audio') ? '1fr 1fr' : '1fr', gap: 10 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {/* Video button */}
                       {primaryLink ? (
                         <a href={primaryLink} target="_blank" rel="noreferrer" className="dl-video-btn">
                           <Download size={14} /> {btnConfig.label}
@@ -745,10 +765,20 @@ export default function App() {
                           {btnConfig.icon} {btnConfig.noData}
                         </button>
                       )}
-                      {showAudioButton && getDownloadLink('audio') && (
-                        <a href={getDownloadLink('audio')} target="_blank" rel="noreferrer" className="dl-audio-btn">
-                          <FileAudio size={14} /> {t.dlAudio}
-                        </a>
+                      {/* TikTok: image + audio row */}
+                      {(showImageButton || (showAudioButton && getDownloadLink('audio'))) && (
+                        <div style={{ display: 'grid', gridTemplateColumns: showImageButton && (showAudioButton && getDownloadLink('audio')) ? '1fr 1fr' : '1fr', gap: 8 }}>
+                          {showImageButton && imageLink && (
+                            <a href={imageLink} target="_blank" rel="noreferrer" className="dl-audio-btn" style={{ color: '#E1306C' }}>
+                              <ImageIcon size={14} /> {t.dlImage}
+                            </a>
+                          )}
+                          {showAudioButton && getDownloadLink('audio') && (
+                            <a href={getDownloadLink('audio')} target="_blank" rel="noreferrer" className="dl-audio-btn">
+                              <FileAudio size={14} /> {t.dlAudio}
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
