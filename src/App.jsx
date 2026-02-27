@@ -111,6 +111,7 @@ const i18n = {
     copyLink:'COPY', share:'SHARE', retry:'RETRY', copied:'COPIED!',
     offline:'No Internet', online:'Back Online',
     noTitle:'No title available', duration:'Duration', views:'Views',
+    downloading:'Downloading...',
   },
   ku: {
     dir:'rtl', langBtn:'English', systemOk:'سیستەم کار دەکات',
@@ -130,6 +131,7 @@ const i18n = {
     copyLink:'کۆپی', share:'بەشداری', retry:'دووبارە', copied:'کۆپی کرا!',
     offline:'ئینتەرنێت نییە', online:'پەیوەندی گەڕایەوە',
     noTitle:'ناونیشان نەدۆزرایەوە', duration:'ماوە', views:'بینراوەکان',
+    downloading:'داگرتن...',
   }
 };
 
@@ -137,6 +139,7 @@ export default function App() {
   const [selected,     setSelected]     = useState(() => localStorage.getItem('arbili_platform') || null);
   const [url,          setUrl]          = useState("");
   const [isLoading,    setIsLoading]    = useState(false);
+  const [isDownloading,setIsDownloading]= useState(false);
   const [result,       setResult]       = useState(null);
   const [logIndex,     setLogIndex]     = useState(0);
   const [history,      setHistory]      = useState([]);
@@ -215,17 +218,34 @@ export default function App() {
   const clearHistory = () => setHistory([]);
 
   // ══════════════════════════════════════════════════════
-  // ✅ getDownloadLink — تیکتۆک {error:false, url:"..."} زیاد کرا
+  // ✅ handleDownload — بە proxy داونلۆد دەکات (نەک play)
   // ══════════════════════════════════════════════════════
+  const handleDownload = async (videoUrl, filename) => {
+    if (!videoUrl) return;
+    setIsDownloading(true);
+    try {
+      // بە proxy سێرڤەرەکەت داگیر دەکات و داونلۆد دەبێت
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}&filename=${encodeURIComponent(filename || 'video.mp4')}`;
+      const a = document.createElement('a');
+      a.href = proxyUrl;
+      a.download = filename || 'video.mp4';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch(e) {
+      // backup: تابی نوێ
+      window.open(videoUrl, '_blank');
+    } finally {
+      setTimeout(() => setIsDownloading(false), 2000);
+    }
+  };
+
   const getDownloadLink = (type) => {
     if (!result) return null;
-
-    // ── TikTok / Snaptik فۆرمات: {error:false, url:"..."} ──
     if (result.error === false && result.url && typeof result.url === 'string') {
       if (type === 'video') return result.url;
       return null;
     }
-
     if (Array.isArray(result)) {
       if (type === 'video') {
         const vid = result.find(x => x.type === 'video' || x.type === 'mp4');
@@ -256,9 +276,6 @@ export default function App() {
   };
 
   const getButtonConfig = () => {
-    const videoLink = getDownloadLink('video');
-    const videoItem = (() => { const list = result?.formats || result?.downloads || result?.downloadLinks || result?.videoLinks || result?.medias; if (list && Array.isArray(list)) return list.find(item => String(item.type || '').toLowerCase() === 'video'); return null; })();
-    const isImage = !videoItem && videoLink && /\.(jpg|webp|png)/i.test(String(videoLink));
     if (selected === 'instagram') return { label: t.dlInstagram, icon: <Instagram size={14} />, noData: t.noPost };
     if (selected === 'tiktok')    return { label: t.dlVideo, icon: <FileVideo size={14} />, noData: t.noVideo };
     return { label: t.dlVideo, icon: <FileVideo size={14} />, noData: t.noVideo };
@@ -283,9 +300,6 @@ export default function App() {
     else { handleCopy(link, 'share'); }
   };
 
-  // ══════════════════════════════════════════════════════
-  // ✅ ئینستاگرام داونلۆدی ڕاستەوخۆ — فەنکشنی جیاواز
-  // ══════════════════════════════════════════════════════
   const handleInstagramDownload = async () => {
     if (!url) return showNotify(t.errUrl, "error");
     setIsLoading(true);
@@ -317,19 +331,10 @@ export default function App() {
     }
   };
 
-  // ══════════════════════════════════════════════════════
-  // ✅ handleExtract — ئینستاگرام جیا، تر JSON
-  // ══════════════════════════════════════════════════════
   const handleExtract = async () => {
     if (!url)      return showNotify(t.errUrl, "error");
     if (!selected) return showNotify(t.errPlatform, "error");
-
-    // ئینستاگرام: ڕاستەوخۆ داونلۆد
-    if (selected === 'instagram') {
-      return handleInstagramDownload();
-    }
-
-    // پلاتفۆرمی تر: JSON
+    if (selected === 'instagram') return handleInstagramDownload();
     setIsLoading(true); setResult(null);
     try {
       const response = await axios.post(endpoint, { url });
@@ -481,9 +486,7 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* ══════════════════════════════════════════════
-            RESULT — تەنها بۆ پلاتفۆرمی تر (نەک ئینستاگرام)
-        ══════════════════════════════════════════════ */}
+        {/* RESULT */}
         <AnimatePresence mode="wait">
           {result && selected !== 'instagram' && (
             <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-20 }}
@@ -527,11 +530,17 @@ export default function App() {
                     <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                       {primaryLink ? (
                         <div style={{ display:'flex', gap:8 }}>
-                          {/* ✅ download attribute زیادکرا */}
-                          <a href={primaryLink} target="_blank" rel="noreferrer" download
-                            className="dl-video-btn" style={{ flex:1 }}>
-                            <Download size={14} /> {btnConfig.label}
-                          </a>
+                          {/* ✅ بە proxy داونلۆد دەکات */}
+                          <button
+                            onClick={() => handleDownload(primaryLink, `video_${Date.now()}.mp4`)}
+                            disabled={isDownloading}
+                            className="dl-video-btn"
+                            style={{ flex:1, border:'none', cursor: isDownloading ? 'wait' : 'pointer', opacity: isDownloading ? 0.8 : 1 }}>
+                            {isDownloading
+                              ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }} />
+                              : <Download size={14} />}
+                            {isDownloading ? t.downloading : btnConfig.label}
+                          </button>
                           <button onClick={() => handleCopy(primaryLink, 'video')} className="neu-btn" title={t.copyLink}
                             style={{ padding:'0 12px', display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:800, color:copied==='video'?'#48bb78':activeColor, flexShrink:0, height:'100%', minHeight:46 }}>
                             {copied==='video' ? <CheckCircle size={14} /> : <Copy size={14} />}
@@ -551,14 +560,20 @@ export default function App() {
                       {(showImageButton || (showAudioButton && getDownloadLink('audio'))) && (
                         <div style={{ display:'grid', gridTemplateColumns:showImageButton&&(showAudioButton&&getDownloadLink('audio'))?'1fr 1fr':'1fr', gap:8 }}>
                           {showImageButton && imageLink && (
-                            <a href={imageLink} target="_blank" rel="noreferrer" download className="dl-audio-btn" style={{ color:'#E1306C' }}>
+                            <button
+                              onClick={() => handleDownload(imageLink, `image_${Date.now()}.jpg`)}
+                              className="dl-audio-btn"
+                              style={{ color:'#E1306C', border:'none', cursor:'pointer' }}>
                               <ImageIcon size={14} /> {t.dlImage}
-                            </a>
+                            </button>
                           )}
                           {showAudioButton && getDownloadLink('audio') && (
-                            <a href={getDownloadLink('audio')} target="_blank" rel="noreferrer" download className="dl-audio-btn">
+                            <button
+                              onClick={() => handleDownload(getDownloadLink('audio'), `audio_${Date.now()}.mp3`)}
+                              className="dl-audio-btn"
+                              style={{ border:'none', cursor:'pointer' }}>
                               <FileAudio size={14} /> {t.dlAudio}
-                            </a>
+                            </button>
                           )}
                         </div>
                       )}
@@ -570,10 +585,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* ══════════════════════════════════════════════
-            ✅ ئینستاگرام: دوگمەی داگرتنی ڕاستەوخۆ
-               پاش کلیک کردنی Extract نیشان دەدرێت
-        ══════════════════════════════════════════════ */}
+        {/* INSTAGRAM */}
         {selected === 'instagram' && !isLoading && url && (
           <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
             style={{ width:'100%', maxWidth:680, marginBottom:24 }}>
@@ -582,9 +594,7 @@ export default function App() {
                 <Instagram size={14} /> Instagram
               </div>
               <p style={{ fontSize:12, color:'var(--text-sub)', fontWeight:700, marginBottom:16 }}>
-                {lang === 'ku'
-                  ? 'دوگمەی خوارەوە کلیک بکە بۆ داگرتنی ڕاستەوخۆ'
-                  : 'Click the button below to download directly'}
+                {lang === 'ku' ? 'دوگمەی خوارەوە کلیک بکە بۆ داگرتنی ڕاستەوخۆ' : 'Click the button below to download directly'}
               </p>
               <button onClick={handleInstagramDownload} className="dl-video-btn"
                 style={{ border:'none', cursor:'pointer', background:'linear-gradient(135deg,#E1306C,#833AB4)' }}>
@@ -644,6 +654,17 @@ export default function App() {
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
         </svg>
       </a>
+
+      {/* Online/Offline Banner */}
+      <AnimatePresence>
+        {onlineBanner && (
+          <motion.div initial={{ y:60, opacity:0 }} animate={{ y:0, opacity:1 }} exit={{ y:60, opacity:0 }}
+            className={`offline-bar ${onlineBanner==='online'?'online-bar':''}`}>
+            {onlineBanner==='online' ? <Wifi size={14}/> : <WifiOff size={14}/>}
+            {onlineBanner==='online' ? t.online : t.offline}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </>
