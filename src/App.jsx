@@ -20,7 +20,7 @@ const TikTokIcon = ({ size = 16, color = 'currentColor' }) => (
    SOFT UI GLOBAL STYLES  (light + dark)
 ═══════════════════════════════════════════════ */
 const softStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800;900&family=Nunito:wght@400;600;700;800;900&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -52,10 +52,15 @@ const softStyles = `
 
   body {
     background: var(--bg);
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Noto Kufi Arabic', 'Nunito', sans-serif;
     color: var(--text);
     min-height: 100vh;
     transition: background 0.4s ease, color 0.4s ease;
+  }
+  :root[lang="en"] body,
+  :root[lang="en"] input,
+  :root[lang="en"] button {
+    font-family: 'Nunito', 'Noto Kufi Arabic', sans-serif;
   }
 
   .neu {
@@ -141,7 +146,7 @@ const softStyles = `
     background: transparent;
     border: none;
     outline: none;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Noto Kufi Arabic', 'Nunito', sans-serif;
     font-size: 14px;
     font-weight: 700;
     color: var(--text);
@@ -156,7 +161,7 @@ const softStyles = `
     border: none;
     border-radius: 14px;
     padding: 14px 20px;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Noto Kufi Arabic', 'Nunito', sans-serif;
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.05em;
@@ -210,7 +215,7 @@ const softStyles = `
     border: none;
     border-radius: 14px;
     padding: 14px 20px;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Noto Kufi Arabic', 'Nunito', sans-serif;
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.05em;
@@ -435,7 +440,7 @@ const softStyles = `
     border: none;
     border-radius: 14px;
     color: var(--text);
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Noto Kufi Arabic', 'Nunito', sans-serif;
     font-size: 12px;
     font-weight: 900;
     letter-spacing: 0.05em;
