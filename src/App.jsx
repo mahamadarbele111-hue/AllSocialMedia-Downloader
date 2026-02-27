@@ -445,23 +445,33 @@ export default function App() {
   useEffect(() => {
     const full = t.placeholder;
     let i = 0;
-    let forward = true;
+    let timeoutId;
     setTypedPlaceholder('');
-    const interval = setInterval(() => {
-      if (forward) {
-        i++;
-        setTypedPlaceholder(full.slice(0, i));
-        if (i >= full.length) {
-          forward = false;
-          setTimeout(() => {}, 1200);
-        }
+
+    const typeChar = () => {
+      i++;
+      setTypedPlaceholder(full.slice(0, i));
+      if (i < full.length) {
+        timeoutId = setTimeout(typeChar, 130);
       } else {
-        i--;
-        setTypedPlaceholder(full.slice(0, i));
-        if (i <= 0) forward = true;
+        // وەستان ٤ چرکە پێش سڕینەوە
+        timeoutId = setTimeout(deleteChar, 4000);
       }
-    }, forward ? 80 : 45);
-    return () => clearInterval(interval);
+    };
+
+    const deleteChar = () => {
+      i--;
+      setTypedPlaceholder(full.slice(0, i));
+      if (i > 0) {
+        timeoutId = setTimeout(deleteChar, 70);
+      } else {
+        // وەستان ٢ چرکە پێش دووبارە
+        timeoutId = setTimeout(typeChar, 2000);
+      }
+    };
+
+    timeoutId = setTimeout(typeChar, 800);
+    return () => clearTimeout(timeoutId);
   }, [t.placeholder]);
 
   useEffect(() => {
