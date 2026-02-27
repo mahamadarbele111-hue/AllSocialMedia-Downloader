@@ -427,6 +427,7 @@ export default function App() {
   const [notification, setNotification] = useState(null);
   const [lang,         setLang]         = useState('ku');
   const [dark,         setDark]         = useState(true);
+  const [typedPlaceholder, setTypedPlaceholder] = useState('');
 
   const t    = i18n[lang];
   const logs = loadingLogs[lang];
@@ -439,6 +440,29 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   }, [dark]);
+
+  // ── Typing animation for placeholder ──
+  useEffect(() => {
+    const full = t.placeholder;
+    let i = 0;
+    let forward = true;
+    setTypedPlaceholder('');
+    const interval = setInterval(() => {
+      if (forward) {
+        i++;
+        setTypedPlaceholder(full.slice(0, i));
+        if (i >= full.length) {
+          forward = false;
+          setTimeout(() => {}, 1200);
+        }
+      } else {
+        i--;
+        setTypedPlaceholder(full.slice(0, i));
+        if (i <= 0) forward = true;
+      }
+    }, forward ? 80 : 45);
+    return () => clearInterval(interval);
+  }, [t.placeholder]);
 
   useEffect(() => {
     document.documentElement.dir  = t.dir;
@@ -734,7 +758,7 @@ export default function App() {
                 value={url}
                 onChange={e => setUrl(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleExtract()}
-                placeholder={t.placeholder}
+                placeholder={url ? '' : typedPlaceholder}
                 style={{ height: 50, flex: 1, minWidth: 0, fontSize: 13 }}
               />
               {url && (
