@@ -373,7 +373,7 @@ const loadingLogs = {
 const i18n = {
   en: {
     dir: 'ltr', langBtn: 'کوردی', systemOk: 'System Operational',
-    subtitle: 'ARBILI DOWNLOADER', target: 'TARGET', universal: 'Universal',
+    subtitle: 'Download your videos with ease ⚡', target: 'TARGET', universal: 'Universal',
     ready: 'READY', placeholder: 'Paste link here...', extract: 'EXTRACT',
     processing: 'PROCESSING', extracted: 'SUCCESSFULLY EXTRACTED',
     dlVideo: 'DOWNLOAD VIDEO', dlImage: 'DOWNLOAD IMAGE', dlReel: 'DOWNLOAD REEL',
@@ -393,7 +393,7 @@ const i18n = {
   },
   ku: {
     dir: 'rtl', langBtn: 'English', systemOk: 'سیستەم کار دەکات',
-    subtitle: 'داگرتنی ئەربیلی', target: 'ئامانج', universal: 'گشتی',
+    subtitle: 'ڤیدیۆکانت بە ئاسانی دابەزێنە ⚡', target: 'ئامانج', universal: 'گشتی',
     ready: 'ئامادەیە', placeholder: 'لینکەکە لێرە دابنێ...', extract: 'داگرە',
     processing: 'پرۆسەکردن...', extracted: 'بە سەرکەوتوویی دەرهێنرا',
     dlVideo: 'ڤیدیۆ داگرە', dlImage: 'وێنە داگرە', dlReel: 'ریل داگرە',
@@ -671,8 +671,8 @@ export default function App() {
             <h1 className="logo-title">Save<sup>+</sup></h1>
           </div>
 
-          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--text-sub)', marginTop: 12 }}>
-            — &nbsp; {t.subtitle} &nbsp; —
+          <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.02em', color: 'var(--text-sub)', marginTop: 12 }}>
+            {t.subtitle}
           </p>
         </motion.header>
 
