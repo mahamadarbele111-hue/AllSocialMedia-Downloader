@@ -18,7 +18,27 @@ const PORT = 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- ROUTE UNIVERSAL ---
+// ═══════════════════════════════════════════════════
+// ✅ ئینستاگرام: ڕاستەوخۆ داونلۆد (stream بۆ کلاینت)
+// POST /api/instagram/download
+// ═══════════════════════════════════════════════════
+app.post('/api/instagram/download', async (req, res) => {
+    const { url } = req.body;
+    console.log('[SERVER] Instagram direct download:', url);
+    try {
+        await services.instagram.fetchInstagram(url, res);
+    } catch (error) {
+        console.error('[Instagram Download ERROR]', error.message);
+        if (!res.headersSent) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════
+// ROUTE UNIVERSAL — هەموو پلاتفۆرمەکان (JSON)
+// POST /api/:platform
+// ═══════════════════════════════════════════════════
 app.post('/api/:platform', async (req, res) => {
     const { platform } = req.params;
     const { url } = req.body;
