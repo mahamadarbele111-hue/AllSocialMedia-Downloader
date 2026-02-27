@@ -92,7 +92,7 @@ const platforms = [
   { id: 'youtube',   name: 'YouTube',   name_ku: 'یوتیوب',     icon: <Youtube />,   color: '#FF0000' },
   { id: 'instagram', name: 'Instagram', name_ku: 'ئینستاگرام', icon: <Instagram />, color: '#E1306C' },
   { id: 'facebook',  name: 'Facebook',  name_ku: 'فەیسبووک',   icon: <Facebook />,  color: '#1877F2' },
-  { id: 'twitter',   name: 'Twitter/X', name_ku: 'تویتەر',     icon: <XIcon />,     color: '#000000' },
+  { id: 'twitter',   name: 'X (Twitter)', name_ku: 'X (تویتەر)',  icon: <XIcon />,     color: '#000000' },
   { id: 'snapchat',  name: 'Snapchat',  name_ku: 'سناپچات',    icon: <Ghost />,     color: '#f5a623' },
 ];
 
