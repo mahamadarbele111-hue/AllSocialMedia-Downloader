@@ -500,13 +500,28 @@ export default function App() {
       }
       if (type === 'audio') {
         const audio = list.find(item => {
-          const label = String(item.text || item.label || item.type || item.extension || "").toLowerCase();
-          return label.includes('mp3') || label.includes('audio') || label.includes('music');
+          const label = String(item.text || item.label || item.type || item.extension || item.quality || "").toLowerCase();
+          const u = String(item.url || "").toLowerCase();
+          return label.includes('mp3') || label.includes('audio') || label.includes('music')
+            || u.includes('.mp3') || u.includes('audio') || u.includes('mp3');
         });
         return audio ? audio.url : null;
       }
     }
+    // Array result (some APIs return array directly)
+    if (Array.isArray(result)) {
+      if (type === 'audio') {
+        const a = result.find(x => x.type === 'audio' || x.type === 'mp3'
+          || String(x.url || '').includes('.mp3') || String(x.url || '').includes('audio'));
+        return a ? a.url : null;
+      }
+    }
     if (type === 'video') return result.videoUrl || result.download || result.video || result.url || null;
+    // audio fallback — check root-level fields
+    if (type === 'audio') {
+      return result.audioUrl || result.audio || result.mp3 || result.music
+        || result.musicUrl || result.sound || result.soundUrl || null;
+    }
     return null;
   };
 
