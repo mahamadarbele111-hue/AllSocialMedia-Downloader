@@ -6,7 +6,6 @@ async function fetchTikTokData(videoUrl) {
   }
 
   try {
-    // Menembak API Puruboy untuk TikTok (Snaptik)
     const { data } = await axios.post(
       "https://puruboy-api.vercel.app/api/downloader/snaptik",
       { url: videoUrl },
@@ -19,31 +18,55 @@ async function fetchTikTokData(videoUrl) {
       }
     );
 
-    // Menangkap hasil respons dari Puruboy
     const result = data.result;
 
     if (!result || !result.video_info || !result.download_links) {
       throw new Error("Gagal mendapatkan data TikTok dari server pusat.");
     }
 
-    // --- PROSES TRANSLASI DATA ---
-    // Mengubah struktur 'type' dari Puruboy menjadi 'text' agar sesuai dengan UI Zeronaut
+    // ── map کردنی download_links ──
+    // text بەکاردێت لە App.jsx بۆ ناساندنی جۆری فایل
     const downloads = result.download_links.map((link) => ({
-      text: link.type, // <-- Ini kunci agar tombol di web kamu tetap ada teksnya
-      url: link.url
+      text: link.type,
+      type: link.type,
+      url:  link.url,
     }));
 
-    // Mengembalikan data persis seperti yang diharapkan oleh App.jsx kamu
+    // ── MP3: ئەگەر API خۆی audio ناردێت بەکارهێنە ──
+    // ئەگەر نەناردێت → URLی video_nwm یان video_hd بەکاربهێنە
+    const hasAudio = downloads.some(d =>
+      ["audio", "mp3", "music"].includes(String(d.type).toLowerCase())
+    );
+
+    if (!hasAudio) {
+      const bestVideo =
+        downloads.find(d => d.type === "video_nwm") ||
+        downloads.find(d => d.type === "video_hd")  ||
+        downloads[0];
+
+      if (bestVideo) {
+        downloads.push({
+          text: "audio",
+          type: "audio",
+          url:  bestVideo.url,
+        });
+      }
+    }
+
     return {
-      status: result.status || "success",
-      title: result.video_info.title || "TikTok Video",
-      thumbnail: result.video_info.thumbnail || null,
-      downloads: downloads, 
+      status:     result.status || "success",
+      title:      result.video_info.title || result.video_info.desc || "TikTok Video",
+      author:     result.video_info.author || result.video_info.nickname || null,
+      thumbnail:  result.video_info.thumbnail || result.video_info.cover || null,
+      duration:   result.video_info.duration || null,
+      view_count: result.video_info.play_count || result.video_info.views || null,
+      downloads:  downloads,
     };
 
   } catch (error) {
-    // Sistem pelacak error jika API menolak
-    const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
+    const errorMsg = error.response
+      ? JSON.stringify(error.response.data)
+      : error.message;
     console.error(`[TIKTOK ERROR] ${errorMsg}`);
     throw new Error("Gagal memproses link TikTok. Pastikan link benar dan bukan akun private.");
   }
