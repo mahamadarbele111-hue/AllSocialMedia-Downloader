@@ -276,23 +276,29 @@ const i18n = {
     by: 'By',
     history: 'Recent History',
     clear: 'CLEAR',
+    paste: 'Paste',
+    openLink: 'OPEN',
+    alertTitle: 'SYSTEM ALERT',
+    notifTitle: 'NOTIFICATION',
     errUrl: 'Please insert URL first!',
     errPlatform: 'Please select a platform first!',
     errClip: 'Clipboard access denied',
     errServer: 'Failed to connect to server.',
     footer1: '© 2026 ARBILI. All rights reserved.',
     footer2: 'Powered by Save',
+    selectPlatform: 'Select a platform to get started',
+    hdQuality: 'HD Quality',
   },
   ku: {
     dir: 'rtl',
     langBtn: 'English',
     systemOk: 'سیستەم کار دەکات',
-    subtitle: 'داگرتنی ARBILI',
+    subtitle: 'داگرتنی ئەربیلی',
     target: 'ئامانج',
     universal: 'گشتی',
     ready: 'ئامادەیە',
     placeholder: 'لینکەکە لێرە دابنێ...',
-    extract: 'داگرتن',
+    extract: 'داگرە',
     processing: 'پرۆسەکردن...',
     extracted: 'بە سەرکەوتوویی دەرهێنرا',
     dlVideo: 'ڤیدیۆ داگرە',
@@ -308,12 +314,18 @@ const i18n = {
     by: 'لەلایەن',
     history: 'مێژووی دوایین',
     clear: 'سڕینەوە',
+    paste: 'پەیست',
+    openLink: 'کردنەوە',
+    alertTitle: 'ئاگادارکردنەوە',
+    notifTitle: 'ئاگاداری',
     errUrl: 'تکایە لینکەکە دابنێ!',
     errPlatform: 'تکایە پلاتفۆرمێک هەڵبژێرە!',
     errClip: 'مەترسی: دەسترسی کلیپبۆرد نەدرا',
     errServer: 'پەیوەندی بە سێرڤەر سەرنەکەوت.',
     footer1: '© ٢٠٢٦ ئەربیلی. هەموو مافەکان پارێزراون.',
     footer2: 'کارپێکراوی Save',
+    selectPlatform: 'پلاتفۆرمێک هەڵبژێرە بۆ دەستپێکردن',
+    hdQuality: 'کوالیتی HD',
   }
 };
 
@@ -538,6 +550,13 @@ export default function App() {
           ))}
         </motion.div>
 
+        {/* hint */}
+        {!selected && (
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', marginBottom: 12, opacity: 0.7 }}>
+            ↑ {t.selectPlatform}
+          </p>
+        )}
+
         {/* ── INPUT AREA ── */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -569,8 +588,9 @@ export default function App() {
                   placeholder={`${t.placeholder}`}
                   style={{ height: 48 }}
                 />
-                <button onClick={handlePaste} className="neu-btn" style={{ padding: '8px 10px', flexShrink: 0 }}>
+                <button onClick={handlePaste} className="neu-btn" title={t.paste} style={{ padding: '8px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: 'var(--text-sub)' }}>
                   <Clipboard size={16} color="var(--text-sub)" />
+                  <span style={{ fontSize: 10 }}>{t.paste}</span>
                 </button>
               </div>
 
@@ -693,8 +713,9 @@ export default function App() {
                     </div>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
                       <p style={{ fontWeight: 800, fontSize: 12, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</p>
-                      {item.author && <p style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 600 }}>{item.author}</p>}
+                      {item.author && <p style={{ fontSize: 10, color: 'var(--text-sub)', fontWeight: 600 }}>{t.by} {item.author}</p>}
                     </div>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--primary)', background: 'rgba(255,107,53,0.1)', padding: '4px 10px', borderRadius: 8 }}>{t.openLink}</span>
                   </motion.div>
                 ))}
               </div>
