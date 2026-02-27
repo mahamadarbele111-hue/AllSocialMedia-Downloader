@@ -773,7 +773,7 @@ export default function App() {
           style={{ textAlign: 'center', marginBottom: 36, width: '100%', maxWidth: 680 }}
         >
           {/* Top bar */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'nowrap', overflowX: 'auto', padding: '0 4px' }}>
             <span className="badge-online">
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#48bb78', display: 'inline-block' }} />
               {t.systemOk}
