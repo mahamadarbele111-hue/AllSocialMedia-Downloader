@@ -111,6 +111,10 @@ const API_LIST = [
   }
 ];
 
+// ══════════════════════════════════════════════════
+// fetchInstagram(url, res)
+// بەکاردەهێنرێت لە: POST /api/instagram/download
+// ══════════════════════════════════════════════════
 async function fetchInstagram(url, res) {
   if (!url || typeof url !== "string") {
     return res.status(400).json({ error: "لینکی ئینستاگرام پێویستە" });
@@ -122,29 +126,27 @@ async function fetchInstagram(url, res) {
   let lastError = null;
   let resultData = null;
 
-  // ── هەوڵ بدە هەر API یەک بەرید ──
   for (const api of API_LIST) {
     try {
       console.log(`[IG] Trying: ${api.name}`);
       resultData = await api.fetch(url);
-      console.log(`[IG] ✅ ${api.name} succeeded — medias: ${resultData.medias.length}`);
+      console.log(`[IG] ✅ ${api.name} — medias: ${resultData.medias.length}`);
       break;
     } catch (err) {
-      console.warn(`[IG] ❌ ${api.name} failed:`, err.message);
+      console.warn(`[IG] ❌ ${api.name}:`, err.message);
       lastError = err;
     }
   }
 
   if (!resultData || !resultData.medias?.length) {
     return res.status(500).json({
-      error: "هیچ API یەک کارنەکرد. لینکەکە private نەبێت یان دووبارە هەوڵ بدەرەوە.",
+      error: "هیچ API یەک کارنەکرد. لینکەکە private نەبێت.",
       detail: lastError?.message
     });
   }
 
   // ── بەهترین مێدیا هەڵبژێرە ──
   let selectedMedia = null;
-
   for (const mediaItem of resultData.medias) {
     const isVideo =
       mediaItem.format === "mp4" ||
@@ -158,11 +160,9 @@ async function fetchInstagram(url, res) {
       });
       if (hasNonMuted) continue;
     }
-
     selectedMedia = mediaItem;
     break;
   }
-
   if (!selectedMedia) selectedMedia = resultData.medias[0];
 
   const isVideo =
@@ -174,9 +174,9 @@ async function fetchInstagram(url, res) {
   const filename  = `instagram_${Date.now()}.${extension}`;
   const mimeType  = isVideo ? "video/mp4" : "image/jpeg";
 
-  console.log(`[IG] Streaming file: ${selectedMedia.url.substring(0, 80)}...`);
+  console.log(`[IG] Streaming: ${selectedMedia.url.substring(0, 80)}...`);
 
-  // ── Stream فایل بۆ کلاینت ──
+  // ── Stream ڕاستەوخۆ بۆ کلاینت ──
   try {
     const fileStream = await axios.get(selectedMedia.url, {
       responseType: "stream",
@@ -206,9 +206,8 @@ async function fetchInstagram(url, res) {
     });
 
   } catch (streamErr) {
-    console.error("[Stream Fallback] Redirecting to:", selectedMedia.url.substring(0, 60));
+    console.error("[Stream Fallback]:", streamErr.message);
     if (!res.headersSent) {
-      // Fallback: redirect ڕاستەوخۆ بۆ لینک
       res.redirect(302, selectedMedia.url);
     }
   }
