@@ -673,28 +673,35 @@ export default function App() {
       }
       return null;
     }
-    const list = result.formats || result.downloads || result.videoLinks || result.medias || result.downloadLinks;
+    const list = result.formats || result.downloads || result.downloadLinks || result.videoLinks || result.medias;
     if (list && Array.isArray(list)) {
       if (type === 'video') {
-        // TikTok API: prefer video_nwm (no watermark), then video_hd, then any video
-        let video = list.find(item => {
-          const label = String(item.text || item.label || item.quality || item.type || "").toLowerCase();
-          return label === 'video_nwm' || label.includes('no_watermark') || label.includes('nowm') || label.includes('nwm');
-        });
+        // Priority 1: explicit type === 'video' (Instagram/Facebook API)
+        let video = list.find(item => String(item.type || '').toLowerCase() === 'video');
+        // Priority 2: TikTok no-watermark
         if (!video) video = list.find(item => {
-          const label = String(item.text || item.label || item.quality || item.type || "").toLowerCase();
+          const label = String(item.text || item.label || item.quality || item.type || '').toLowerCase();
+          return label === 'video_nwm' || label.includes('no_watermark') || label.includes('nwm');
+        });
+        // Priority 3: HD
+        if (!video) video = list.find(item => {
+          const label = String(item.text || item.label || item.quality || item.type || '').toLowerCase();
           return label === 'video_hd' || label.includes('hd');
         });
+        // Priority 4: any video/mp4 label
         if (!video) video = list.find(item => {
-          const label = String(item.text || item.label || item.quality || item.type || "").toLowerCase();
-          const u     = String(item.url || "").toLowerCase();
-          return (label.includes('video') || label.includes('mp4') || item.extension === 'mp4') && !u.includes('.m3u8') && !label.includes('audio') && !label.includes('mp3');
+          const label = String(item.text || item.label || item.quality || item.type || '').toLowerCase();
+          const u     = String(item.url || '').toLowerCase();
+          return (label.includes('video') || label.includes('mp4') || item.extension === 'mp4')
+            && !u.includes('.m3u8') && !label.includes('audio') && !label.includes('mp3');
         });
+        // Priority 5: URL contains .mp4
         if (!video) video = list.find(item => item.url && String(item.url).includes('.mp4'));
+        // Priority 6: first non-audio non-image item
         if (!video && list.length > 0) {
           const first = list[0];
-          const label = String(first.label || first.type || first.text || "").toLowerCase();
-          if (!label.includes('profile') && !label.includes('audio') && !label.includes('mp3')) video = first;
+          const label = String(first.label || first.type || first.text || '').toLowerCase();
+          if (!label.includes('profile') && !label.includes('audio') && !label.includes('mp3') && !label.includes('image')) video = first;
         }
         return video ? video.url : null;
       }
@@ -733,7 +740,13 @@ export default function App() {
 
   const getButtonConfig = () => {
     const videoLink = getDownloadLink('video');
-    const isImage   = videoLink && /\.(jpg|webp|png)/i.test(String(videoLink));
+    // Check type from downloads list directly (Instagram sends type:'image')
+    const videoItem = (() => {
+      const list = result?.formats || result?.downloads || result?.downloadLinks || result?.videoLinks || result?.medias;
+      if (list && Array.isArray(list)) return list.find(item => String(item.type || '').toLowerCase() === 'video');
+      return null;
+    })();
+    const isImage = !videoItem && videoLink && /\.(jpg|webp|png)/i.test(String(videoLink));
     if (selected === 'instagram') return { label: isImage ? t.dlImage : t.dlReel, icon: isImage ? <ImageIcon size={14} /> : <Instagram size={14} />, noData: t.noPost };
     if (selected === 'tiktok')    return { label: t.dlVideo, icon: <FileVideo size={14} />, noData: t.noVideo };
     return { label: t.dlVideo, icon: <FileVideo size={14} />, noData: t.noVideo };
