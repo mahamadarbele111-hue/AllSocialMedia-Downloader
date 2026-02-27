@@ -696,50 +696,51 @@ export default function App() {
               </span>
             </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div className="neu-inset" style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10 }}>
-                <input
-                  className="neu-input"
-                  type="text"
-                  value={url}
-                  onChange={e => setUrl(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleExtract()}
-                  placeholder={t.placeholder}
-                  style={{ height: 48 }}
-                />
-                <button onClick={handlePaste} className="neu-btn" title={t.paste} style={{ padding: '8px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: 'var(--text-sub)' }}>
-                  <Clipboard size={16} color="var(--text-sub)" />
-                  <span style={{ fontSize: 10 }}>{t.paste}</span>
-                </button>
-                {url && (
-                  <button
-                    onClick={() => setUrl('')}
-                    className="neu-btn"
-                    title={t.clearUrl}
-                    style={{ padding: '6px 8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e53e3e', borderRadius: 10 }}
-                  >
-                    <X size={14} color="#e53e3e" />
-                  </button>
-                )}
-              </div>
-
-              <div
-                className={`extract-btn-wrap ${isLoading ? 'loading' : ''}`}
-                style={{ '--c1': activeColor, '--c2': activeColor + 'aa', '--c3': '#ffffff44' }}
-              >
+            {/* ── URL input row ── */}
+            <div className="neu-inset" style={{ display: 'flex', alignItems: 'center', padding: '0 10px', gap: 6, height: 50, marginBottom: 12 }}>
+              <input
+                className="neu-input"
+                type="text"
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleExtract()}
+                placeholder={t.placeholder}
+                style={{ height: 50, flex: 1, minWidth: 0, fontSize: 13 }}
+              />
+              {url && (
                 <button
-                  className={`extract-btn-inner ${isLoading ? 'loading' : ''}`}
-                  onClick={handleExtract}
-                  disabled={isLoading}
-                  style={{ color: activeColor }}
+                  onClick={() => setUrl('')}
+                  className="neu-btn"
+                  title={t.clearUrl}
+                  style={{ padding: '5px 7px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
                 >
-                  {isLoading
-                    ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite', color: activeColor }} />
-                    : <Zap size={15} color={activeColor} />
-                  }
-                  {isLoading ? t.processing : t.extract}
+                  <X size={13} color="#e53e3e" />
                 </button>
-              </div>
+              )}
+              <div style={{ width: 1, height: 22, background: 'var(--shadow-d)', flexShrink: 0, opacity: 0.5 }} />
+              <button onClick={handlePaste} className="neu-btn" title={t.paste} style={{ padding: '7px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 800, color: 'var(--text-sub)' }}>
+                <Clipboard size={15} color="var(--text-sub)" />
+                <span style={{ fontSize: 10 }}>{t.paste}</span>
+              </button>
+            </div>
+
+            {/* ── Extract button full width ── */}
+            <div
+              className={`extract-btn-wrap ${isLoading ? 'loading' : ''}`}
+              style={{ '--c1': activeColor, '--c2': activeColor + 'aa', '--c3': '#ffffff44', width: '100%' }}
+            >
+              <button
+                className={`extract-btn-inner ${isLoading ? 'loading' : ''}`}
+                onClick={handleExtract}
+                disabled={isLoading}
+                style={{ color: activeColor, width: '100%', justifyContent: 'center', height: 46 }}
+              >
+                {isLoading
+                  ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite', color: activeColor }} />
+                  : <Zap size={15} color={activeColor} />
+                }
+                {isLoading ? t.processing : t.extract}
+              </button>
             </div>
           </div>
         </motion.div>
